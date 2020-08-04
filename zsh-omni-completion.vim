@@ -1,12 +1,14 @@
-" The main function of this plugin, assigned to the `omnifunc' set option, whose
-" task is to perform the omni-completion.
+" FUNCTION: ZshComplete()
+" The main function of this plugin (assigned to the `omnifunc` set option) that
+" has the main task to perform the omni-completion, i.e.: to return the list of
+" matches to the text before the cursor.
 function ZshComplete(findstart, base)
     if a:findstart
         let result = CompleteZshFunctions(1, a:base)
         let result = CompleteZshParameters(1, a:base)
     else
-	" Prepare the buffer contents for processing, if needed (i.e.: on every
-	" N-th call, when only also the processing is being done).
+        " Prepare the buffer contents for processing, if needed (i.e.: on every
+        " N-th call, when only also the processing is being done).
         if s:call_count % 5 == 0
             let b:zv_all_buffers_lines = getbufline(bufnr(), 1,"$")
         endif
@@ -18,6 +20,7 @@ function ZshComplete(findstart, base)
     return result
 endfunction
 
+" FUNCTION: CompleteZshFunctions()
 " The function is a complete-function which returns matching Zsh-function names.
 function CompleteZshFunctions(findstart, base)
     if a:findstart
@@ -33,14 +36,13 @@ function CompleteZshFunctions(findstart, base)
         let b:zv_compl_1_start = col(".")
         return 0
     else
-	" Retrieve the complete list of Zsh functions in the buffer on every
-	" N-th call.
+        " Retrieve the complete list of Zsh functions in the buffer on every
+        " N-th call.
         if s:call_count % 5 == 0
             call s:gatherFunctionNames()
         endif
 
-        " Detect the matching function names and store
-        " them for returning.
+        " Detect the matching function names and store them for the returning.
         let l:result = []
         for l:func_name in b:zv_functions
             if l:func_name =~# '^' . s:quote(len(l:bits) >= 1 ? l:bits[-1] : "") . '.*'
@@ -52,6 +54,7 @@ function CompleteZshFunctions(findstart, base)
     endif
 endfunction
 
+" FUNCTION: CompleteZshParameters()
 " The function is a complete-function which returns matching Zsh-parameter names.
 function CompleteZshParameters(findstart, base)
     if a:findstart
@@ -67,14 +70,15 @@ function CompleteZshParameters(findstart, base)
     let l:bits = split(l:line[0])
     let l:result = []
 
+
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
         let b:zv_compl_2_start = stridx(l:line[0], len(l:bits) >= 1 ? l:bits[-1] : "" )
         return b:zv_compl_2_start
     else
-	" Retrieve the complete list of Zshell parameters in the buffer on every
-	" N-th call.
+        " Retrieve the complete list of Zshell parameters in the buffer on every
+        " N-th call.
         if s:call_count % 5 == 0
             call s:gatherParameterNames()
         endif
@@ -90,6 +94,7 @@ function CompleteZshParameters(findstart, base)
     endif
 endfunction
 
+" FUNCTION: s:gatherFunctionNames()
 " Buffer-contents processor for Zsh *function* names. Stores all the detected
 " Zsh function names in the list b:zv_parameters.
 function s:gatherFunctionNames()
@@ -110,6 +115,7 @@ function s:gatherFunctionNames()
     call uniq(sort(b:zv_functions))
 endfunction
 
+" FUNCTION: s:gatherParameterNames()
 " Buffer-contents processor for Zsh *parameter* names. Stores all the detected
 " Zsh parameter names in the list b:zv_parameters.
 function s:gatherParameterNames()
@@ -129,6 +135,7 @@ function s:gatherParameterNames()
     call uniq(sort(b:zv_parameters))
 endfunction
 
+" FUNCTION: s:quote()
 " A function which quotes the regex-special characters with a backslash, which
 " makes them inactive, literal characters in the very-magic mode (… =~ " '\v…').
 function s:quote(str)
@@ -153,4 +160,4 @@ endfunction
 let s:call_count = 0
 set omnifunc=ZshComplete
 
-" vim:set ft=vim tw=80 noet sw=4 sts=4:
+" vim:set ft=vim tw=80 et sw=4 sts=4 foldmethod=syntax:
