@@ -28,13 +28,16 @@ function CompleteZshFunctions(findstart, base)
     else
         let l:line = b:zv_curline
     endif
-    let l:bits = split(l:line[0])
+
+    let l:line_bits = split(l:line[0])
+    let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line[0]) > 0 ? (l:line[0])[len(l:line[0])-1] : ""]
 
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        let b:zv_compl_1_start = col(".")
-        return 0
+        let b:zv_compl_1_start = strridx(l:line[0], l:line_bits[-1])
+        let b:zv_compl_1_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
+        return b:zv_compl_1_start
     else
         " Retrieve the complete list of Zsh functions in the buffer on every
         " N-th call.
@@ -44,8 +47,9 @@ function CompleteZshFunctions(findstart, base)
 
         " Detect the matching function names and store them for the returning.
         let l:result = []
+        let l:line_bits[-1] = l:line_bits[-1] =~ '^[[:space:]]$' ? '' : l:line_bits[-1]
         for l:func_name in b:zv_functions
-            if l:func_name =~# '^' . s:quote(len(l:bits) >= 1 ? l:bits[-1] : "") . '.*'
+            if l:func_name =~# '^' . s:quote(l:line_bits[-1]) . '.*'
                 call add(l:result, l:func_name)
             endif
         endfor
@@ -66,15 +70,15 @@ function CompleteZshParameters(findstart, base)
     else
         let l:line = b:zv_curline
     endif
- 
-    let l:bits = split(l:line[0])
-    let l:result = []
 
+    let l:line_bits = split(l:line[0])
+    let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line[0]) > 0 ? (l:line[0])[len(l:line[0])-1] : ""]
 
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        let b:zv_compl_2_start = stridx(l:line[0], len(l:bits) >= 1 ? l:bits[-1] : "" )
+        let b:zv_compl_2_start = strridx(l:line[0], l:line_bits[-1])
+        let b:zv_compl_2_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         return b:zv_compl_2_start
     else
         " Retrieve the complete list of Zshell parameters in the buffer on every
@@ -83,10 +87,13 @@ function CompleteZshParameters(findstart, base)
             call s:gatherParameterNames()
         endif
 
-	" Detect the matching Zsh parameter names and store them for returning.
-        for l:line in b:zv_parameters
-            if l:line =~# '^' . s:quote(len(l:bits) >= 1 ? l:bits[-1] : "") . '.*'
-                call add(l:result, l:line)
+        " Detect the matching Zsh parameter names and store them for the
+        " returning.
+        let l:result = []
+        let l:line_bits[-1] = l:line_bits[-1] =~ '^[[:space:]]$' ? '' : l:line_bits[-1]
+        for l:param_name in b:zv_parameters
+            if l:param_name =~# '^' . s:quote(l:line_bits[-1]). '.*'
+                call add(l:result, l:param_name)
             endif
         endfor
 
