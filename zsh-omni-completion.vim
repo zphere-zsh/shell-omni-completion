@@ -59,8 +59,6 @@ function CompleteZshParameters(findstart, base)
         let b:zv_compl_2_start = stridx(l:line[0], len(l:bits) >= 1 ? l:bits[-1] : "" )
         return b:zv_compl_2_start
     else
-    echo a:base
-    sleep 1
         if s:call_count % 5 == 0
             call s:gatherParameterNames()
         endif
@@ -86,6 +84,7 @@ function s:gatherFunctionNames()
             call add(b:zv_functions, l:line)
         endif
     endfor
+    call uniq(b:zv_functions)
 endfunction
 
 function s:gatherParameterNames()
@@ -98,6 +97,7 @@ function s:gatherParameterNames()
             call add(b:zv_parameters, l:param)
         endif
     endfor
+    call uniq(b:zv_parameters)
 endfunction
 
 function s:quote(str)
