@@ -31,7 +31,7 @@ function CompleteZshFunctions(findstart, base)
         endif
 
         for l:line in b:zv_functions
-            if l:line =~# '^' . (len(l:bits) >= 1 ? l:bits[-1] : "") . '.*'
+            if l:line =~# '^' . s:quote(len(l:bits) >= 1 ? l:bits[-1] : "") . '.*'
                 call add(l:result, l:line)
             endif
         endfor
@@ -66,8 +66,7 @@ function CompleteZshParameters(findstart, base)
         endif
 
         for l:line in b:zv_parameters
-            " TODO: a:base
-            if l:line =~# '^' . (len(l:bits) >= 1 ? l:bits[-1] : "") . '.*'
+            if l:line =~# '^' . s:quote(len(l:bits) >= 1 ? l:bits[-1] : "") . '.*'
                 call add(l:result, l:line)
             endif
         endfor
@@ -99,6 +98,25 @@ function s:gatherParameterNames()
             call add(b:zv_parameters, l:param)
         endif
     endfor
+endfunction
+
+function s:quote(str)
+    return substitute(
+                \     substitute(
+                \        substitute(
+                \            substitute(
+                \                substitute(
+                \                    substitute(
+                \                        substitute(
+                \                            a:str,
+                \                            "\v\\\\","\\\\", "g"
+                \                        ), '\v\{','\{', "g"
+                \                    ), '\v\]','\]', "g"
+                \                ), '\v\[','\[', "g"
+                \            ), '\v\*','\*', "g"
+                \        ),'\v\+','\+', "g"
+                \     ),'\v\.','\.', "g"
+                \ )
 endfunction
 
 let s:call_count = 0
