@@ -37,7 +37,7 @@ function CompleteZshFunctions(findstart, base)
     if a:findstart
         let b:zv_compl_1_start = strridx(l:line[0], l:line_bits[-1])
         let b:zv_compl_1_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
-        return b:zv_compl_1_start
+        return l:line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_1_start
     else
         " Retrieve the complete list of Zsh functions in the buffer on every
         " N-th call.
@@ -79,7 +79,7 @@ function CompleteZshParameters(findstart, base)
     if a:findstart
         let b:zv_compl_2_start = strridx(l:line[0], l:line_bits[-1])
         let b:zv_compl_2_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
-        return b:zv_compl_2_start
+        return l:line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_2_start
     else
         " Retrieve the complete list of Zshell parameters in the buffer on every
         " N-th call.
