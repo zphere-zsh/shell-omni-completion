@@ -9,10 +9,16 @@ function ZshComplete(findstart, base)
         let result = CompleteZshArrayAndHashKeys(1, a:base)
     else
         " Prepare the buffer contents for processing, if needed (i.e.: on every
-        " N-th call, when only also the processing is being done).
+        " N-th call, when only also the processing-sequence is being initiated).
         if s:call_count % 5 == 0
-            let b:zv_all_buffers_lines = getbufline(bufnr(), 1,"$")
+            let b:zv_all_buffers_lines = []
+            for bufnum in range(last_buffer_nr())
+                if buflisted(bufnum)
+                    let b:zv_all_buffers_lines += getbufline(bufnum, 1,"$")
+                endif
+            endfor
         endif
+
         let result = CompleteZshFunctions(0, a:base)
         let result += CompleteZshParameters(0, a:base)
         let result += CompleteZshArrayAndHashKeys(0, a:base)
