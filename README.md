@@ -24,4 +24,8 @@ is recommended (it's a plugin adapted specifically for the omni completion),
 otherwise a regular omni-completion invocation via `Ctrl-X Ctrl-O` is also
 possible.
 
+Only sourcing of the plugin is needed, no other setup is needed. You can use
+your favourite Vim plugin manager or manually copy the script to the
+`~/.vim/plugin/autoload` directory.
+
 <!-- vim:set ft=markdown tw=80 fo+=a1n autoindent: -->
