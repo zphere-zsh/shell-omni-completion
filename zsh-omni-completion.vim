@@ -222,6 +222,30 @@ function s:getPrecedingBits(findstart)
     return [l:line_bits, l:line]
 endfunction
 
+"""""""""""""""""" UTILITY FUNCTIONS
+
+function! Mapped(fn, l)
+    let new_list = deepcopy(a:l)
+    call map(new_list, string(a:fn) . '(v:val)')
+    return new_list
+endfunction
+
+function! Filtered(fn, l)
+    let new_list = deepcopy(a:l)
+    call filter(new_list, string(a:fn) . '(v:val)')
+    return new_list
+endfunction
+
+function! FilteredNot(fn, l)
+    let new_list = deepcopy(a:l)
+    call filter(new_list, '!'.string(a:fn) . '(v:val)')
+    return new_list
+endfunction
+
+function CreateEmptyList(name)
+    eval("let ".a:name." = []")
+endfunction
+
 """""""""""""""""" THE SCRIPT BODY
 
 let s:call_count = 0
