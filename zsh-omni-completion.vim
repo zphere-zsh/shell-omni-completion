@@ -88,14 +88,14 @@ endfunction
 " FUNCTION: CompleteZshArrayAndHashKeys()
 " The function is a complete-function which returns matching Zsh-parameter names.
 function CompleteZshArrayAndHashKeys(findstart, base)
-    let [l:line_bits,l:line] = s:getPrecedingBits(a:findstart)
+    let [line_bits,line] = s:getPrecedingBits(a:findstart)
 
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        let b:zv_compl_2_start = strridx(l:line, l:line_bits[-1])
-        let b:zv_compl_2_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
-        return l:line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_2_start
+        let b:zv_compl_2_start = strridx(line, line_bits[-1])
+        let b:zv_compl_2_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
+        return line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_2_start
     else
         " Retrieve the complete list of Zshell parameters in the buffer on every
         " N-th call.
@@ -105,15 +105,15 @@ function CompleteZshArrayAndHashKeys(findstart, base)
 
         " Detect the matching Zsh parameter names and store them for the
         " returning.
-        let l:result = []
-        let l:line_bits[-1] = l:line_bits[-1] =~ '^[[:space:]]$' ? '' : l:line_bits[-1]
-        for l:param_name in b:zv_parameters
-            if l:param_name =~# '^' . s:quote(l:line_bits[-1]). '.*'
-                call add(l:result, l:param_name)
+        let result = []
+        let line_bits[-1] = line_bits[-1] =~ '^[[:space:]]$' ? '' : line_bits[-1]
+        for the_key in b:zv_array_and_hash_keys
+            if the_key =~# '^' . s:quote(line_bits[-1]). '.*'
+                call add(result, the_key)
             endif
         endfor
 
-        return l:result
+        return result
     endif
 endfunction
 
@@ -163,19 +163,22 @@ endfunction
 " Zsh parameter names in the list b:zv_parameters.
 function s:gatherArrayAndHashKeys()
     " Prepare/zero the buffer variable.
-    let b:zv_parameters = []
+    let b:zv_array_and_hash_keys = []
 
     " Iterate over the lines in the buffer searching for a Zsh parameter name.
-    for l:line in b:zv_all_buffers_lines
-        if l:line =~# '\v\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}[a-zA-Z0-9_]+'
-            let l:param = substitute(l:line, '\v.*\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}([a-zA-Z0-9_]+).*','\4',"g")
-            call add(b:zv_parameters, l:param)
-        endif
+    for line in b:zv_all_buffers_lines
+        let idx=0
+        let idx = match(line, '\v(\$(\{|))=([#+^=~]{1,2})=(\([a-zA-Z0-9_:@%.\|;#~]+\))=#=[a-zA-Z0-9_]+\[[^\]]+\]', idx)
+        while idx >= 0
+            let res_list = matchlist(line, '\v(\$(\{|))=([#+^=~]{1,2})=(\([a-zA-Z0-9_:@%.\|;#~]+\))=#=[a-zA-Z0-9_]+\[([^\]]+)\]', idx)
+            call add(b:zv_array_and_hash_keys, res_list[5])
+            let idx = match(line, '\v(\$(\{|))=([#+^=~]{1,2})=(\([a-zA-Z0-9_:@%.\|;#~]+\))=#=[a-zA-Z0-9_]+\[[^\]]+\]', idx+len(res_list[5])+2)
+        endwhile
     endfor
 
     " Uniqify the resulting list of Zsh parameter names. The uniquification
     " requires also sorting the input list.
-    call uniq(sort(b:zv_parameters))
+    call uniq(sort(b:zv_array_and_hash_keys))
 endfunction
 
 " FUNCTION: s:quote()
