@@ -65,7 +65,7 @@ function CompleteZshFunctions(findstart, base)
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if line_bits[-1] =~ '\v([\$\[]|^[[:space:]]*$)'
+        if line_bits[-1] !~ '\v^\k{1,}$'
             let b:zoc_compl_functions_start = -3
         else
             let b:zoc_compl_functions_start = strridx(line, line_bits[-1])
@@ -152,8 +152,8 @@ function s:completeKeywords(id, line_bits)
     if a:id == g:ZOC_PARAM && a:line_bits[-1] =~ '\v^\$.*'
         let a:line_bits[-1] = (a:line_bits[-1])[1:]
         let pfx='$'
-    elseif a:id == g:ZOC_KEY && a:line_bits[-1] =~ '\v^[a-zA-Z0-9_]+\['
-        let a:line_bits[-1] = substitute( a:line_bits[-1], '\v^[a-zA-Z0-9_]+\[', '', '' )
+    elseif a:id == g:ZOC_KEY && a:line_bits[-1] =~ '\v^[^\[]+\['
+        let a:line_bits[-1] = substitute( a:line_bits[-1], '\v^[^\[]+\[', '', '' )
         let pfx=''
     else
         let pfx=''
