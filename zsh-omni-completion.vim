@@ -88,11 +88,12 @@ function CompleteZshParameters(findstart, base)
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if line_bits[-1] !~ '\v\$'
+        if line_bits[-1] !~ '\v(\$|^[a-zA-Z0-9_]+$)'
             let b:zoc_compl_parameters_start = -3
         else
             let b:zoc_compl_parameters_start = strridx(line, line_bits[-1])
-            let b:zoc_compl_parameters_start = b:zoc_compl_parameters_start + stridx(line[b:zoc_compl_parameters_start:],'$')
+            let idx = stridx(line[b:zoc_compl_parameters_start:],'$')
+            let b:zoc_compl_parameters_start = b:zoc_compl_parameters_start + (idx < 0 ? 0 : idx)
             " Support the from-void text completing. It's however disabled on
             " the upper level.
             let b:zoc_compl_parameters_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
@@ -281,9 +282,9 @@ function s:getPrecedingBits(findstart)
             if idx <= curs_col - 2
                 " Return a sublist with the preceding elements up to the active,
                 " *hot* bit.
-                return [line_bits[0:l:count], line]
+                return [line_bits[0:count], line]
             endif
-            let work_line = work_line[0:l:idx-1]
+            let work_line = work_line[0:idx-1]
             let count -= 1
         endfor
     endif
