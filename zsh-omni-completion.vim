@@ -77,7 +77,9 @@ function CompleteZshArrayAndHashKeys(findstart, base)
 endfunction
 
 " FUNCTION: CompleteZshArrayAndHashKeys()
-" The function is a complete-function which returns matching Zsh-parameter names.
+" A general-purpose, variadic backend function, which obtains the request on the
+" type of the keywords (functions, parameters or array keys) to complete and
+" performs the operation. 
 function s:completeKeywords(id, line_bits)
     " Retrieve the complete list of Zsh functions in the buffer on every
     " N-th call.
