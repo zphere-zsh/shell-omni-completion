@@ -29,7 +29,7 @@ function CompleteZshFunctions(findstart, base)
         let l:line = b:zv_curline
     endif
 
-    let l:line_bits = split(l:line[0])
+    let l:line_bits = split(l:line[0],'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>]')
     let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line[0]) > 0 ? (l:line[0])[len(l:line[0])-1] : ""]
 
     " First call — basically return 0. Additionally (it's unused value),
@@ -71,7 +71,7 @@ function CompleteZshParameters(findstart, base)
         let l:line = b:zv_curline
     endif
 
-    let l:line_bits = split(l:line[0])
+    let l:line_bits = split(l:line[0],'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>]')
     let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line[0]) > 0 ? (l:line[0])[len(l:line[0])-1] : ""]
 
     " First call — basically return 0. Additionally (it's unused value),
