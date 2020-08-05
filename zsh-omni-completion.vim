@@ -34,7 +34,7 @@ function CompleteZshFunctions(findstart, base)
     else
         " Retrieve the complete list of Zsh functions in the buffer on every
         " N-th call.
-        if s:call_count % 5 == 0
+        if (s:call_count == 0) || (s:call_count % 5 == 0)
             call s:gatherFunctionNames()
         endif
 
@@ -65,7 +65,7 @@ function CompleteZshParameters(findstart, base)
     else
         " Retrieve the complete list of Zshell parameters in the buffer on every
         " N-th call.
-        if s:call_count % 5 == 0
+        if (s:call_count == 0) || (s:call_count+1 % 5 == 0)
             call s:gatherParameterNames()
         endif
 
