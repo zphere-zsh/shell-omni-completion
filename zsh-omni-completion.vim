@@ -65,7 +65,11 @@ function CompleteZshFunctions(findstart, base)
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if line_bits[-1] !~ '\v^\k{1,}$'
+        let line_bits_ne = Filtered(function('len'), line_bits)
+        let idx = strridx( line, len(line_bits_ne) >= 2 ? line_bits_ne[-2] : line_bits_ne[-1] )
+        if line_bits[-1] !~ '\v\k{1,}$'
+            let b:zoc_compl_functions_start = -3
+        elseif len(line_bits_ne) >= 2 && line[idx:] !~ '\v^.*(\|\||\||\&|\&\&|;|builtin|command|exec|nocorrect|noglob|pkexec|while|until|if|then|elif|else|do|time|coproc|\|\&|\&\!|\&\|\()[[:space:]]+\k{1,}$'
             let b:zoc_compl_functions_start = -3
         else
             let b:zoc_compl_functions_start = strridx(line, line_bits[-1])
@@ -132,7 +136,7 @@ endfunction
 " FUNCTION: CompleteZshArrayAndHashKeys()
 " A general-purpose, variadic backend function, which obtains the request on the
 " type of the keywords (functions, parameters or array keys) to complete and
-" performs the operation. 
+" performs the operation.
 function s:completeKeywords(id, line_bits)
     " Retrieve the complete list of Zsh functions in the buffer on every
     " N-th call.
@@ -159,7 +163,7 @@ function s:completeKeywords(id, line_bits)
         let pfx=''
     endif
 
-    for the_key in gatherVariables[a:id] 
+    for the_key in gatherVariables[a:id]
         if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
             call add(result, pfx.the_key)
         endif
@@ -267,13 +271,13 @@ function s:getPrecedingBits(findstart)
         let line = getbufline(bufnr(), line("."))[0]
         let b:zoc_curline = line
         let curs_col = col(".")
-        let b:zoc_cursor_col = curs_col 
+        let b:zoc_cursor_col = curs_col
     else
         let line = b:zoc_curline
         let curs_col = b:zoc_cursor_col
     endif
 
-    let line_bits = split(line,'\v[[:space:]\{\}\(\);\|\&\#\%\=\^!\*\<\>\"'."\\'".']')
+    let line_bits = split(line,'\v[[:space:]\{\}\(\)\#\%\=\^!\*\<\>\"'."\\'".']')
     let line_bits = len(line_bits) >= 1 ? line_bits : [len(line) > 0 ? (line)[len(line)-1] : ""]
 
     if len(line_bits) > 1
