@@ -18,13 +18,18 @@ function ZshComplete(findstart, base)
         let result = CompleteZshParameters(1, a:base)
         let result = CompleteZshArrayAndHashKeys(1, a:base)
     else
-        " Prepare the buffer contents for processing, if needed (i.e.: on every
+        " Prepare the buffers' contents for processing, if needed (i.e.: on every
         " N-th call, when only also the processing-sequence is being initiated).
+        "
+        " The update of this buffer-lines cache is synchronized with the other
+        " processings, i.e.: it depends on the local (to the buffer) call count
+        " of the plugin, however the storage variable is s: -session, to limit the
+        " memory usage.
         if b:call_count % 5 == 0
-            let b:zv_all_buffers_lines = []
+            let s:vz_all_buffers_lines = []
             for bufnum in range(last_buffer_nr())
                 if buflisted(bufnum)
-                    let b:zv_all_buffers_lines += getbufline(bufnum, 1,"$")
+                    let s:vz_all_buffers_lines += getbufline(bufnum, 1,"$")
                 endif
             endfor
         endif
@@ -122,7 +127,7 @@ function s:gatherFunctionNames()
     let b:zv_functions = []
 
     " Iterate over the lines in the buffer searching for a function name.
-    for l:line in b:zv_all_buffers_lines
+    for l:line in s:vz_all_buffers_lines
         if l:line =~# '\v^((function[[:space:]]+[^[:space:]]+[[:space:]]*(\(\)|))|([^[:space:]]+[[:space:]]*\(\)))[[:space:]]*(\{|)[[:space:]]*$'
             let l:line = split(l:line)[0]
             let l:line = substitute(l:line,"()","","g")
@@ -143,7 +148,7 @@ function s:gatherParameterNames()
     let b:zv_parameters = []
 
     " Iterate over the lines in the buffer searching for a Zsh parameter name.
-    for l:line in b:zv_all_buffers_lines
+    for l:line in s:vz_all_buffers_lines
         if l:line =~# '\v\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}[a-zA-Z0-9_]+'
             let l:param = substitute(l:line, '\v.*\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}([a-zA-Z0-9_]+).*','\4',"g")
             call add(b:zv_parameters, l:param)
@@ -163,7 +168,7 @@ function s:gatherArrayAndHashKeys()
     let b:zv_array_and_hash_keys = []
 
     " Iterate over the lines in the buffer searching for a Zsh parameter name.
-    for line in b:zv_all_buffers_lines
+    for line in s:vz_all_buffers_lines
         let idx=0
         let idx = match(line, '\v[a-zA-Z0-9_]+\[[^\]]+\]', idx)
         while idx >= 0
