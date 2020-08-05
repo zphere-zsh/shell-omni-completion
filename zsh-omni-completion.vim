@@ -44,25 +44,19 @@ function ZshComplete(findstart, base)
 
         let result = []
 
-        let s:gather_only_mode = 0
-        if b:zoc_compl_functions_start < 0 | let s:gather_only_mode = 1 | else |
-                    \ let b:zoc_last_fccount[0] = b:zoc_call_count  | endif
-        if ! s:gather_only_mode
-            let result += CompleteZshFunctions(0, a:base)
+        if b:zoc_compl_functions_start >= 0 
+                let b:zoc_last_fccount[0] = b:zoc_call_count
+                let result += CompleteZshFunctions(0, a:base)
         endif
 
-        let s:gather_only_mode = 0
-        if b:zoc_compl_parameters_start < 0 | let s:gather_only_mode = 1 | else |
-                    \ let b:zoc_last_pccount[0] = b:zoc_call_count | endif
-        if ! s:gather_only_mode
-            let result += CompleteZshParameters(0, a:base)
+        if b:zoc_compl_parameters_start >= 0 
+                let b:zoc_last_pccount[0] = b:zoc_call_count
+                let result += CompleteZshParameters(0, a:base)
         endif
 
-        let s:gather_only_mode = 0
-        if b:zoc_compl_arrays_keys_start < 0 | let s:gather_only_mode = 1 | else |
-                    \ let b:zoc_last_kccount[0] = b:zoc_call_count | endif
-        if ! s:gather_only_mode
-            let result += CompleteZshArrayAndHashKeys(0, a:base)
+        if b:zoc_compl_arrays_keys_start >= 0 
+                let b:zoc_last_kcount[0] = b:zoc_call_count
+                let result += CompleteZshArrayAndHashKeys(0, a:base)
         endif
 
         call uniq(sort(result))
@@ -88,7 +82,7 @@ function CompleteZshFunctions(findstart, base)
         return b:zoc_compl_functions_start
     else
         " Detect the matching Zsh function names and return them.
-        return s:completeKeywords(g:ZOC_FUNC, line_bits, s:gather_only_mode)
+        return s:completeKeywords(g:ZOC_FUNC, line_bits)
     endif
 endfunction
 
@@ -112,7 +106,7 @@ function CompleteZshParameters(findstart, base)
         return b:zoc_compl_parameters_start
     else
         " Detect the matching Zsh parameter names and return them.
-        return s:completeKeywords(g:ZOC_PARAM, line_bits, s:gather_only_mode)
+        return s:completeKeywords(g:ZOC_PARAM, line_bits)
     endif
 endfunction
 
@@ -136,7 +130,7 @@ function CompleteZshArrayAndHashKeys(findstart, base)
         return b:zoc_compl_arrays_keys_start
     else
         " Detect the matching arrays' and hashes' keys and return them.
-        return s:completeKeywords(g:ZOC_KEY, line_bits, s:gather_only_mode)
+        return s:completeKeywords(g:ZOC_KEY, line_bits)
     endif
 endfunction
 
@@ -144,13 +138,12 @@ endfunction
 " A general-purpose, variadic backend function, which obtains the request on the
 " type of the keywords (functions, parameters or array keys) to complete and
 " performs the operation. 
-function s:completeKeywords(id, line_bits, gather_only)
+function s:completeKeywords(id, line_bits)
     " Retrieve the complete list of Zsh functions in the buffer on every
     " N-th call.
     if (b:zoc_call_count == 0) || ((b:zoc_call_count - a:id + 2) % 10 == 0)
         call s:gatherFunctions[a:id]()
     endif
-    if a:gather_only | return [] | endif
 
     " Ensure that the buffer-variables exist
     let to_declare = filter([ "zoc_functions", "zoc_parameters", "zoc_array_and_hash_keys" ], '!exists("b:".v:val)')
