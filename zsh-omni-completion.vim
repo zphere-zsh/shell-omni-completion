@@ -168,11 +168,11 @@ function s:gatherArrayAndHashKeys()
     " Iterate over the lines in the buffer searching for a Zsh parameter name.
     for line in b:zv_all_buffers_lines
         let idx=0
-        let idx = match(line, '\v(\$(\{|))=([#+^=~]{1,2})=(\([a-zA-Z0-9_:@%.\|;#~]+\))=#=[a-zA-Z0-9_]+\[[^\]]+\]', idx)
+        let idx = match(line, '\v[a-zA-Z0-9_]+\[[^\]]+\]', idx)
         while idx >= 0
-            let res_list = matchlist(line, '\v(\$(\{|))=([#+^=~]{1,2})=(\([a-zA-Z0-9_:@%.\|;#~]+\))=#=[a-zA-Z0-9_]+\[([^\]]+)\]', idx)
-            call add(b:zv_array_and_hash_keys, res_list[5])
-            let idx = match(line, '\v(\$(\{|))=([#+^=~]{1,2})=(\([a-zA-Z0-9_:@%.\|;#~]+\))=#=[a-zA-Z0-9_]+\[[^\]]+\]', idx+len(res_list[5])+2)
+            let res_list = matchlist(line, '\v[a-zA-Z0-9_]+\[([^\]]+)\]', idx)
+            call add(b:zv_array_and_hash_keys, res_list[1])
+            let idx = match(line, '\v[a-zA-Z0-9_]+\[[^\]]+\]', idx+len(res_list[1])+2)
         endwhile
     endfor
 
