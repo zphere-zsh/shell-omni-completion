@@ -19,7 +19,7 @@ language.  The completion's characteristics are:
 # Installation and Usage
 
 An auto-completion plugin
-[**zphere-zsh/zsh-auto-popmenu**](https://github.comzphere-zsh/zsh-auto-popmenu/)
+[**zphere-zsh/zsh-auto-popmenu**](https://github.com/zphere-zsh/zsh-auto-popmenu/)
 is recommended (it's a plugin adapted specifically for this omni completion),
 otherwise a regular omni-completion invocation via `Ctrl-X Ctrl-O` is also
 possible.
