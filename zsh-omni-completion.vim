@@ -278,17 +278,17 @@ function s:getPrecedingBits(findstart)
 
     if len(line_bits) > 1
         " Locate the *active*, *hot* bit in which the cursor is being placed.
-        let count = len(line_bits)
+        let l:count = len(line_bits)
         let work_line = line
         for bit in reverse(copy(line_bits))
             let idx = strridx(work_line, bit)
             if idx <= curs_col - 2
                 " Return a sublist with the preceding elements up to the active,
                 " *hot* bit.
-                return [line_bits[0:count], line]
+                return [line_bits[0:l:count], line]
             endif
             let work_line = work_line[0:idx-1]
-            let count -= 1
+            let l:count -= 1
         endfor
     endif
     return [line_bits, line]
