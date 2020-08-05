@@ -26,7 +26,6 @@ endfunction
 " The function is a complete-function which returns matching Zsh-function names.
 function CompleteZshFunctions(findstart, base)
     let [l:line_bits,l:line] = s:getPrecedingBits(a:findstart)
-
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
@@ -34,14 +33,7 @@ function CompleteZshFunctions(findstart, base)
         let b:zv_compl_1_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         return l:line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_1_start
     else
-        " Retrieve the complete list of Zsh functions in the buffer on every
-        " N-th call.
-        if (s:call_count == 0) || (s:call_count % 5 == 0)
-            call s:gatherFunctionNames()
-        endif
-
-        " Detect the matching function names and store them for the returning.
-        return s:completeKeywords(b:zv_functions, line_bits)
+        return s:completeKeywords(0, line_bits)
     endif
 endfunction
 
@@ -57,15 +49,8 @@ function CompleteZshParameters(findstart, base)
         let b:zv_compl_2_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         return l:line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_2_start
     else
-        " Retrieve the complete list of Zshell parameters in the buffer on every
-        " N-th call.
-        if (s:call_count == 0) || (s:call_count+1 % 5 == 0)
-            call s:gatherParameterNames()
-        endif
-
-        " Detect the matching Zsh parameter names and store them for the
-        " returning.
-        return s:completeKeywords(b:zv_parameters, line_bits)
+        " Detect the matching Zsh parameter names and return them.
+        return s:completeKeywords(1, line_bits)
     endif
 endfunction
 
@@ -81,24 +66,28 @@ function CompleteZshArrayAndHashKeys(findstart, base)
         let b:zv_compl_2_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         return line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_2_start
     else
-        " Retrieve the complete list of Zshell parameters in the buffer on every
-        " N-th call.
-        if (s:call_count == 0) || (s:call_count+2 % 5 == 0)
-            call s:gatherArrayAndHashKeys()
-        endif
-
-        return s:completeKeywords(b:zv_array_and_hash_keys, line_bits)
+        return s:completeKeywords(2, line_bits)
     endif
 endfunction
 
 " FUNCTION: CompleteZshArrayAndHashKeys()
 " The function is a complete-function which returns matching Zsh-parameter names.
-function s:completeKeywords(keywords, line_bits)
-    " Detect the matching Zsh parameter names and store them for the
-    " returning.
+function s:completeKeywords(id, line_bits)
+    " Retrieve the complete list of Zsh functions in the buffer on every
+    " N-th call.
+    if (s:call_count == 0) || (s:call_count + a:id % 5 == 0)
+        call s:gatherFunctions[a:id]()
+    endif
+
+    " Ensure that the buffer-variables exist
+    let to_declare = filter([ "zv_functions", "zv_parameters", "zv_array_and_hash_keys" ], '!exists("b:".v:val)')
+    for bufvar in to_declare | let b:[bufvar] = [] | endfor
+    let gatherVariables = [ b:zv_functions, b:zv_parameters, b:zv_array_and_hash_keys ]
+
+    " Detect the matching Zsh-object names and store them for returning.
     let result = []
     let a:line_bits[-1] = a:line_bits[-1] =~ '^[[:space:]]$' ? '' : a:line_bits[-1]
-    for the_key in a:keywords
+    for the_key in gatherVariables[a:id] 
         if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
             call add(result, the_key)
         endif
@@ -233,7 +222,12 @@ function s:getPrecedingBits(findstart)
     return [l:line_bits, l:line]
 endfunction
 
+"""""""""""""""""" THE SCRIPT BODY
+
 let s:call_count = 0
+let s:gatherFunctions = [ function("s:gatherFunctionNames"),
+            \ function("s:gatherParameterNames"),
+            \ function("s:gatherArrayAndHashKeys") ]
 set omnifunc=ZshComplete
 
 " vim:set ft=vim tw=80 et sw=4 sts=4 foldmethod=syntax:
