@@ -25,6 +25,7 @@ function ZshComplete(findstart, base)
         " where the specific object-kind completion finished the cycle in the
         " previous call to ZshComplete.
         let b:zoc_call_count = (b:zoc_last_ccount_vars[winner])[0] + 1
+        echom "Returning: " . string(result)
     else
         " Prepare the buffers' contents for processing, if needed (i.e.: on every
         " N-th call, when only also the processing-sequence is being initiated).
@@ -66,10 +67,14 @@ function CompleteZshFunctions(findstart, base)
     " remember the current column.
     if a:findstart
         let line_bits_ne = Filtered(function('len'), line_bits)
+        echom string(line_bits) . string(line_bits_ne)
         let idx = strridx( line, len(line_bits_ne) >= 2 ? line_bits_ne[-2] : line_bits_ne[-1] )
+        echom idx . "← idx"
         if line_bits[-1] !~ '\v\k{1,}$'
+            echom "-3 ← first"
             let b:zoc_compl_functions_start = -3
         elseif len(line_bits_ne) >= 2 && line[idx:] !~ '\v^.*(\|\||\||\&|\&\&|;|builtin|command|exec|nocorrect|noglob|pkexec|while|until|if|then|elif|else|do|time|coproc|\|\&|\&\!|\&\|\()[[:space:]]+\k{1,}$'
+            echom "-3 ← second"
             let b:zoc_compl_functions_start = -3
         else
             let b:zoc_compl_functions_start = strridx(line, line_bits[-1])
@@ -77,6 +82,7 @@ function CompleteZshFunctions(findstart, base)
             " the upper level.
             let b:zoc_compl_functions_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         endif
+        echom 'b:zoc_compl_functions_start:' . b:zoc_compl_functions_start
         return b:zoc_compl_functions_start
     else
         " Detect the matching Zsh function names and return them.
@@ -102,6 +108,7 @@ function CompleteZshParameters(findstart, base)
             " the upper level.
             let b:zoc_compl_parameters_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         endif
+        echom 'b:zoc_compl_parameters_start:' . b:zoc_compl_parameters_start
         return b:zoc_compl_parameters_start
     else
         " Detect the matching Zsh parameter names and return them.
@@ -126,6 +133,7 @@ function CompleteZshArrayAndHashKeys(findstart, base)
             " the upper level.
             let b:zoc_compl_arrays_keys_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         endif
+        echom 'b:zoc_compl_arrays_keys_start:' . b:zoc_compl_arrays_keys_start
         return b:zoc_compl_arrays_keys_start
     else
         " Detect the matching arrays' and hashes' keys and return them.
@@ -141,6 +149,7 @@ function s:completeKeywords(id, line_bits)
     " Retrieve the complete list of Zsh functions in the buffer on every
     " N-th call.
     if (b:zoc_call_count == 0) || ((b:zoc_call_count - a:id + 2) % 10 == 0)
+        echom 'CALL: ' . b:zoc_call_count . ' - ' . a:id . ' + 2 % 10 == ' . ((b:zoc_call_count - a:id + 2) % 10)
         call s:gatherFunctions[a:id]()
     endif
 
@@ -153,6 +162,7 @@ function s:completeKeywords(id, line_bits)
     let result = []
     let a:line_bits[-1] = a:line_bits[-1] =~ '^[[:space:]]$' ? '' : a:line_bits[-1]
 
+    echom a:id . g:ZOC_PARAM . ' / '. a:line_bits[-1]
     if a:id == g:ZOC_PARAM && a:line_bits[-1] =~ '\v^\$.*'
         let a:line_bits[-1] = (a:line_bits[-1])[1:]
         let pfx='$'
@@ -162,6 +172,7 @@ function s:completeKeywords(id, line_bits)
     else
         let pfx=''
     endif
+    echom 'After: '.string(a:line_bits)
 
     for the_key in gatherVariables[a:id]
         if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
