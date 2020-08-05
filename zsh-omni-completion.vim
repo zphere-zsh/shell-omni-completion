@@ -44,21 +44,15 @@ function ZshComplete(findstart, base)
 
         let result = []
 
-        if b:zoc_compl_functions_start >= 0 
-                let b:zoc_last_fccount[0] = b:zoc_call_count
-                let result += CompleteZshFunctions(0, a:base)
-        endif
+        let three_results = [ b:zoc_compl_functions_start,
+                    \ b:zoc_compl_parameters_start,
+                    \ b:zoc_compl_arrays_keys_start ]
 
-        if b:zoc_compl_parameters_start >= 0 
-                let b:zoc_last_pccount[0] = b:zoc_call_count
-                let result += CompleteZshParameters(0, a:base)
-        endif
-
-        if b:zoc_compl_arrays_keys_start >= 0 
-                let b:zoc_last_kcount[0] = b:zoc_call_count
-                let result += CompleteZshArrayAndHashKeys(0, a:base)
-        endif
-
+        for id in range(3)
+            if three_results[id] < 0 | continue | endif
+            let b:zoc_last_ccount_vars[id][0] = b:zoc_call_count
+            let result += s:completerFunctions[id](0, a:base)
+        endfor
         call uniq(sort(result))
     endif
     return result
