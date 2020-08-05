@@ -41,15 +41,7 @@ function CompleteZshFunctions(findstart, base)
         endif
 
         " Detect the matching function names and store them for the returning.
-        let l:result = []
-        let l:line_bits[-1] = l:line_bits[-1] =~ '^[[:space:]]$' ? '' : l:line_bits[-1]
-        for l:func_name in b:zv_functions
-            if l:func_name =~# '^' . s:quote(l:line_bits[-1]) . '.*'
-                call add(l:result, l:func_name)
-            endif
-        endfor
-
-        return l:result
+        return s:completeKeywords(b:zv_functions, line_bits)
     endif
 endfunction
 
@@ -73,15 +65,7 @@ function CompleteZshParameters(findstart, base)
 
         " Detect the matching Zsh parameter names and store them for the
         " returning.
-        let l:result = []
-        let l:line_bits[-1] = l:line_bits[-1] =~ '^[[:space:]]$' ? '' : l:line_bits[-1]
-        for l:param_name in b:zv_parameters
-            if l:param_name =~# '^' . s:quote(l:line_bits[-1]). '.*'
-                call add(l:result, l:param_name)
-            endif
-        endfor
-
-        return l:result
+        return s:completeKeywords(b:zv_parameters, line_bits)
     endif
 endfunction
 
@@ -103,18 +87,24 @@ function CompleteZshArrayAndHashKeys(findstart, base)
             call s:gatherArrayAndHashKeys()
         endif
 
-        " Detect the matching Zsh parameter names and store them for the
-        " returning.
-        let result = []
-        let line_bits[-1] = line_bits[-1] =~ '^[[:space:]]$' ? '' : line_bits[-1]
-        for the_key in b:zv_array_and_hash_keys
-            if the_key =~# '^' . s:quote(line_bits[-1]). '.*'
-                call add(result, the_key)
-            endif
-        endfor
-
-        return result
+        return s:completeKeywords(b:zv_array_and_hash_keys, line_bits)
     endif
+endfunction
+
+" FUNCTION: CompleteZshArrayAndHashKeys()
+" The function is a complete-function which returns matching Zsh-parameter names.
+function s:completeKeywords(keywords, line_bits)
+    " Detect the matching Zsh parameter names and store them for the
+    " returning.
+    let result = []
+    let a:line_bits[-1] = a:line_bits[-1] =~ '^[[:space:]]$' ? '' : a:line_bits[-1]
+    for the_key in a:keywords
+        if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
+            call add(result, the_key)
+        endif
+    endfor
+
+    return result
 endfunction
 
 " FUNCTION: s:gatherFunctionNames()
