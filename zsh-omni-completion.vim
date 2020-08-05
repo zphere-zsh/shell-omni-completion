@@ -113,7 +113,7 @@ function CompleteZshArrayAndHashKeys(findstart, base)
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if line_bits[-1] !~ '\v[a-zA-Z0-9_]+\[[^\]]+\]'
+        if line_bits[-1] !~ '\v[a-zA-Z0-9_]+\['
             let b:zoc_compl_arrays_keys_start = -3
         else
             let b:zoc_compl_arrays_keys_start = strridx(line, line_bits[-1])
@@ -152,6 +152,9 @@ function s:completeKeywords(id, line_bits)
     if a:id == g:ZOC_PARAM && a:line_bits[-1] =~ '\v^\$.*'
         let a:line_bits[-1] = (a:line_bits[-1])[1:]
         let pfx='$'
+    elseif a:id == g:ZOC_KEY && a:line_bits[-1] =~ '\v^[a-zA-Z0-9_]+\['
+        let a:line_bits[-1] = substitute( a:line_bits[-1], '\v^[a-zA-Z0-9_]+\[', '', '' )
+        let pfx=''
     else
         let pfx=''
     endif
@@ -270,7 +273,7 @@ function s:getPrecedingBits(findstart)
         let curs_col = b:zoc_cursor_col
     endif
 
-    let line_bits = split(line,'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>\"'."\\'".']')
+    let line_bits = split(line,'\v[[:space:]\{\}\(\);\|\&\#\%\=\^!\*\<\>\"'."\\'".']')
     let line_bits = len(line_bits) >= 1 ? line_bits : [len(line) > 0 ? (line)[len(line)-1] : ""]
 
     if len(line_bits) > 1
