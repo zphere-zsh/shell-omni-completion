@@ -1,3 +1,13 @@
+" FUNCTION: ZshOmniComplBufInit()
+" A function that's called when the buffer is loaded and its filetype is known.
+" It initializes the omni completion for the buffer.
+function ZshOmniComplBufInit()
+    let b:call_count = 0
+    if &ft == 'zsh'
+        setlocal omnifunc=ZshComplete
+    endif
+endfunction
+
 " FUNCTION: ZshComplete()
 " The main function of this plugin (assigned to the `omnifunc` set option) that
 " has the main task to perform the omni-completion, i.e.: to return the list of
@@ -10,7 +20,7 @@ function ZshComplete(findstart, base)
     else
         " Prepare the buffer contents for processing, if needed (i.e.: on every
         " N-th call, when only also the processing-sequence is being initiated).
-        if s:call_count % 5 == 0
+        if b:call_count % 5 == 0
             let b:zv_all_buffers_lines = []
             for bufnum in range(last_buffer_nr())
                 if buflisted(bufnum)
@@ -22,7 +32,7 @@ function ZshComplete(findstart, base)
         let result = CompleteZshFunctions(0, a:base)
         let result += CompleteZshParameters(0, a:base)
         let result += CompleteZshArrayAndHashKeys(0, a:base)
-        let s:call_count += 1
+        let b:call_count += 1
         call uniq(sort(result))
     endif
     return result
@@ -83,7 +93,7 @@ endfunction
 function s:completeKeywords(id, line_bits)
     " Retrieve the complete list of Zsh functions in the buffer on every
     " N-th call.
-    if (s:call_count == 0) || (s:call_count + a:id % 5 == 0)
+    if (b:call_count == 0) || (b:call_count + a:id % 5 == 0)
         call s:gatherFunctions[a:id]()
     endif
 
@@ -230,6 +240,15 @@ function s:getPrecedingBits(findstart)
     return [l:line_bits, l:line]
 endfunction
 
+"""""""""""""""""" THE SCRIPT BODY
+
+let s:gatherFunctions = [ function("s:gatherFunctionNames"),
+            \ function("s:gatherParameterNames"),
+            \ function("s:gatherArrayAndHashKeys") ]
+
+augroup ZshOmniComplInitGroup
+    au FileType * call ZshOmniComplBufInit()
+augroup END
 """""""""""""""""" UTILITY FUNCTIONS
 
 function! Mapped(fn, l)
@@ -253,13 +272,5 @@ endfunction
 function CreateEmptyList(name)
     eval("let ".a:name." = []")
 endfunction
-
-"""""""""""""""""" THE SCRIPT BODY
-
-let s:call_count = 0
-let s:gatherFunctions = [ function("s:gatherFunctionNames"),
-            \ function("s:gatherParameterNames"),
-            \ function("s:gatherArrayAndHashKeys") ]
-set omnifunc=ZshComplete
 
 " vim:set ft=vim tw=80 et sw=4 sts=4 foldmethod=syntax:
