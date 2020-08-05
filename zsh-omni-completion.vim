@@ -15,7 +15,7 @@ function ZshComplete(findstart, base)
         let result = CompleteZshFunctions(0, a:base)
         let result += CompleteZshParameters(0, a:base)
         let s:call_count += 1
-        call sort(result)
+        call uniq(sort(result))
     endif
     return result
 endfunction
