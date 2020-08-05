@@ -28,4 +28,8 @@ Only sourcing of the plugin is required, no other setup is needed. You can use
 your favourite Vim plugin manager or manually copy the script to the
 `~/.vim/plugin/autoload` directory.
 
+# Presentation
+
+[![asciicast](https://asciinema.org/a/351814.svg)](https://asciinema.org/a/351814)
+
 <!-- vim:set ft=markdown tw=80 fo+=a1n autoindent: -->
