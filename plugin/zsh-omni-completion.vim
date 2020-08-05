@@ -3,8 +3,10 @@
 " It initializes the omni completion for the buffer.
 function ZshOmniComplBufInit()
     let b:zoc_call_count = 0
-    let [ b:zoc_last_fccount, b:zoc_last_pccount, b:zoc_last_kccount ] = [ [-1], [-1], [-1] ]
-    let b:zoc_last_ccount_vars = [ b:zoc_last_fccount, b:zoc_last_pccount, b:zoc_last_kccount ]
+    let [ b:zoc_last_fccount, b:zoc_last_pccount, 
+                \ b:zoc_last_kccount, b:zoc_last_lccount ] = [ [-1], [-1], [-1], [-1] ]
+    let b:zoc_last_ccount_vars = [ b:zoc_last_fccount, b:zoc_last_pccount, 
+                \ b:zoc_last_kccount, b:zoc_last_lccount ]
     if &ft == 'zsh'
         setlocal omnifunc=ZshComplete
     endif
@@ -15,44 +17,82 @@ endfunction
 " has the main task to perform the omni-completion, i.e.: to return the list of
 " matches to the text before the cursor.
 function ZshComplete(findstart, base)
+    " Prepare the buffers' contents for processing, if needed (i.e.: on every
+    " N-th call, when only also the processing-sequence is being initiated).
+    "
+    " The update of this buffer-lines cache is synchronized with the other
+    " processings, i.e.: it depends on the local (to the buffer) call count
+    " of the plugin, however the storage variable is s: -session, to limit the
+    " memory usage.
+    if b:zoc_call_count % 5 == 0
+        let s:zoc_all_buffers_lines = []
+        for bufnum in range(last_buffer_nr()+1)
+            if buflisted(bufnum)
+                let s:zoc_all_buffers_lines += getbufline(bufnum, 1,"$")
+            endif
+        endfor
+    endif
+
     if a:findstart
-        let three_results = [ CompleteZshFunctions(1, a:base),
-                    \ CompleteZshParameters(1, a:base),
-                    \ CompleteZshArrayAndHashKeys(1, a:base) ]
-        let result = max( three_results )
-        let winner = index( three_results, result )
+        let got_winner = 0
+        call CompleteZshFunctions(1, a:base)
+        if b:zoc_compl_functions_start >= 0
+            let result_compl = CompleteZshFunctions(0, a:base)
+            if len(result_compl)
+                let result = b:zoc_compl_functions_start
+                let winner = 0
+                let got_winner = 1
+                let to_declare = [ "zoc_compl_parameters_start",
+                            \ "zoc_compl_arrays_keys_start",
+                            \ "zoc_compl_lines_start" ]
+                for var in to_declare | let b:[var] = -3 | endfor
+            endif
+        endif
+        if ! got_winner
+            call CompleteLines(1, a:base)
+            if ( b:zoc_compl_lines_start >= 0 )
+                let result_compl = CompleteLines(0, a:base)
+                if len(result_compl)
+                    let result = b:zoc_compl_lines_start
+                    let winner = 3
+                    let got_winner = 1
+                    let to_declare = [ "zoc_compl_functions_start",
+                                \ "zoc_compl_parameters_start",
+                                \ "zoc_compl_arrays_keys_start" ]
+                    for var in to_declare | let b:[var] = -3 | endfor
+                endif
+            endif
+        endif
+        if ! got_winner 
+            let four_results = [ b:zoc_compl_functions_start,
+                        \ CompleteZshParameters(1, a:base),
+                        \ CompleteZshArrayAndHashKeys(1, a:base),
+                        \ CompleteLines(1, a:base) ]
+            let result = max( four_results )
+            let winner = index( four_results, result )
+        endif
         " Restart the cyclic renewal of the database variables from the point
         " where the specific object-kind completion finished the cycle in the
         " previous call to ZshComplete.
         let b:zoc_call_count = (b:zoc_last_ccount_vars[winner])[0] + 1
         "echom "Returning: " . string(result)
     else
-        " Prepare the buffers' contents for processing, if needed (i.e.: on every
-        " N-th call, when only also the processing-sequence is being initiated).
-        "
-        " The update of this buffer-lines cache is synchronized with the other
-        " processings, i.e.: it depends on the local (to the buffer) call count
-        " of the plugin, however the storage variable is s: -session, to limit the
-        " memory usage.
-        if b:zoc_call_count % 5 == 0
-            let s:zoc_all_buffers_lines = []
-            for bufnum in range(last_buffer_nr()+1)
-                if buflisted(bufnum)
-                    let s:zoc_all_buffers_lines += getbufline(bufnum, 1,"$")
-                endif
-            endfor
-        endif
-
         let result = []
 
-        let three_results = [ b:zoc_compl_functions_start,
+        let four_results = [ b:zoc_compl_functions_start,
                     \ b:zoc_compl_parameters_start,
-                    \ b:zoc_compl_arrays_keys_start ]
+                    \ b:zoc_compl_arrays_keys_start,
+                    \ b:zoc_compl_lines_start ]
 
-        for id in range(3)
-            if three_results[id] < 0 | continue | endif
+        for id in range(4)
+            if four_results[id] < 0 | continue | endif
             let b:zoc_last_ccount_vars[id][0] = b:zoc_call_count
-            let result += s:completerFunctions[id](0, a:base)
+            let result_im = s:completerFunctions[id](0, a:base)
+            if id == g:ZOC_LINE && len(result_im)
+                let result = result_im
+                break
+            endif
+            let result += result_im
         endfor
         call uniq(sort(result))
     endif
@@ -67,9 +107,12 @@ function CompleteZshFunctions(findstart, base)
     " remember the current column.
     if a:findstart
         let line_bits_ne = Filtered(function('len'), line_bits)
-        "echom string(line_bits) . string(line_bits_ne)
-        let idx = strridx( line, len(line_bits_ne) >= 2 ? line_bits_ne[-2] : line_bits_ne[-1] )
         "echom idx . "← idx"
+        if len(line_bits_ne)
+            let idx = strridx( line, len(line_bits_ne) >= 2 ? line_bits_ne[-2] : line_bits_ne[-1] )
+        else
+            let idx = 0
+        endif
         if line_bits[-1] !~ '\v\k{1,}$'
             "echom "-3 ← first"
             let b:zoc_compl_functions_start = -3
@@ -86,7 +129,7 @@ function CompleteZshFunctions(findstart, base)
         return b:zoc_compl_functions_start
     else
         " Detect the matching Zsh function names and return them.
-        return s:completeKeywords(g:ZOC_FUNC, line_bits)
+        return s:completeKeywords(g:ZOC_FUNC, line_bits, line)
     endif
 endfunction
 
@@ -112,7 +155,7 @@ function CompleteZshParameters(findstart, base)
         return b:zoc_compl_parameters_start
     else
         " Detect the matching Zsh parameter names and return them.
-        return s:completeKeywords(g:ZOC_PARAM, line_bits)
+        return s:completeKeywords(g:ZOC_PARAM, line_bits, line)
     endif
 endfunction
 
@@ -137,15 +180,39 @@ function CompleteZshArrayAndHashKeys(findstart, base)
         return b:zoc_compl_arrays_keys_start
     else
         " Detect the matching arrays' and hashes' keys and return them.
-        return s:completeKeywords(g:ZOC_KEY, line_bits)
+        return s:completeKeywords(g:ZOC_KEY, line_bits, line)
     endif
 endfunction
 
-" FUNCTION: CompleteZshArrayAndHashKeys()
+" FUNCTION: CompleteLines()
+" The function is a complete-function which returns matching lines.
+function CompleteLines(findstart, base)
+    let [line_bits,line] = s:getPrecedingBits(a:findstart)
+
+    " First call — basically return 0. Additionally (it's unused value),
+    " remember the current column.
+    if a:findstart
+        if line_bits[-1] =~ '\v^[[:space:]]*$'
+            let b:zoc_compl_lines_start = -3
+        else
+            let line_bits_ne = Filtered(function('len'), line_bits)
+            let idx = stridx(line,line_bits_ne[0])
+            let b:zoc_compl_lines_start = idx <= 0 ? 0 : idx
+        endif
+        return b:zoc_compl_lines_start
+    else
+        " Detect the matching arrays' and hashes' keys and return them.
+        return s:completeKeywords(g:ZOC_LINE, line_bits, line)
+    endif
+endfunction
+
+"""""""""""""""""" PRIVATE FUNCTIONS
+
+" FUNCTION: s:completeKeywords()
 " A general-purpose, variadic backend function, which obtains the request on the
 " type of the keywords (functions, parameters or array keys) to complete and
 " performs the operation.
-function s:completeKeywords(id, line_bits)
+function s:completeKeywords(id, line_bits, line)
     " Retrieve the complete list of Zsh functions in the buffer on every
     " N-th call.
     if (b:zoc_call_count == 0) || ((b:zoc_call_count - a:id + 2) % 10 == 0)
@@ -156,7 +223,8 @@ function s:completeKeywords(id, line_bits)
     " Ensure that the buffer-variables exist
     let to_declare = filter([ "zoc_functions", "zoc_parameters", "zoc_array_and_hash_keys" ], '!exists("b:".v:val)')
     for bufvar in to_declare | let b:[bufvar] = [] | endfor
-    let gatherVariables = [ b:zoc_functions, b:zoc_parameters, b:zoc_array_and_hash_keys ]
+    let gatherVariables = [ b:zoc_functions, b:zoc_parameters, 
+                \ b:zoc_array_and_hash_keys, s:zoc_all_buffers_lines ]
 
     " Detect the matching Zsh-object names and store them for returning.
     let result = []
@@ -169,14 +237,25 @@ function s:completeKeywords(id, line_bits)
     elseif a:id == g:ZOC_KEY && a:line_bits[-1] =~ '\v^[^\[]+\['
         let a:line_bits[-1] = substitute( a:line_bits[-1], '\v^[^\[]+\[', '', '' )
         let pfx=''
+    elseif a:id == g:ZOC_LINE
+        let a:line_bits[-1] = substitute(a:line,'\v^[[:space:]]*(.*)$', '\1', '')
     else
         let pfx=''
     endif
     "echom 'After: '.string(a:line_bits)
 
     for the_key in gatherVariables[a:id]
-        if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
-            call add(result, pfx.the_key)
+        if a:id == g:ZOC_LINE
+            let the_key = substitute(the_key,'\v^[[:space:]]*(.*)$', '\1', '')
+            if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
+                if the_key != a:line_bits[-1]
+                    call add(result, the_key)
+                endif
+            endif
+        else
+            if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
+                call add(result, pfx.the_key)
+            endif
         endif
     endfor
 
@@ -247,6 +326,12 @@ function s:gatherArrayAndHashKeys()
     call uniq(sort(b:zoc_array_and_hash_keys))
 endfunction
 
+" FUNCTION: s:gatherLines()
+" Buffer-contents processor for Zsh *parameter* names. Stores all the detected
+" Zsh parameter names in the list b:zoc_parameters.
+function s:gatherLines()
+endfunction
+
 " FUNCTION: s:quote()
 " A function which quotes the regex-special characters with a backslash, which
 " makes them inactive, literal characters in the very-magic mode (… =~ " '\v…').
@@ -313,17 +398,19 @@ endfunction
 
 let s:gatherFunctions = [ function("s:gatherFunctionNames"),
             \ function("s:gatherParameterNames"),
-            \ function("s:gatherArrayAndHashKeys") ]
+            \ function("s:gatherArrayAndHashKeys"),
+            \ function("s:gatherLines") ]
 
 let s:completerFunctions = [ function("CompleteZshFunctions"),
             \ function("CompleteZshParameters"),
-            \ function("CompleteZshArrayAndHashKeys") ]
+            \ function("CompleteZshArrayAndHashKeys"),
+            \ function("CompleteLines") ]
 
 augroup ZshOmniComplInitGroup
     au FileType * call ZshOmniComplBufInit()
 augroup END
 
-let [ g:ZOC_FUNC, g:ZOC_PARAM, g:ZOC_KEY ] = [ 0, 1, 2 ]
+let [ g:ZOC_FUNC, g:ZOC_PARAM, g:ZOC_KEY, g:ZOC_LINE ] = [ 0, 1, 2, 3 ]
 
 """""""""""""""""" UTILITY FUNCTIONS
 
