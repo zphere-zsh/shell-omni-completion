@@ -61,17 +61,17 @@ endfunction
 " FUNCTION: CompleteZshFunctions()
 " The function is a complete-function which returns matching Zsh-function names.
 function CompleteZshFunctions(findstart, base)
-    let [l:line_bits,l:line] = s:getPrecedingBits(a:findstart)
+    let [line_bits,line] = s:getPrecedingBits(a:findstart)
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if l:line_bits[-1] =~ '\v([\$\[]|^[[:space:]]*$)'
+        if line_bits[-1] =~ '\v([\$\[]|^[[:space:]]*$)'
             let b:zoc_compl_functions_start = -3
         else
-            let b:zoc_compl_functions_start = strridx(l:line, l:line_bits[-1])
+            let b:zoc_compl_functions_start = strridx(line, line_bits[-1])
             " Support the from-void text completing. It's however disabled on
             " the upper level.
-            let b:zoc_compl_functions_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
+            let b:zoc_compl_functions_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         endif
         return b:zoc_compl_functions_start
     else
@@ -83,19 +83,19 @@ endfunction
 " FUNCTION: CompleteZshParameters()
 " The function is a complete-function which returns matching Zsh-parameter names.
 function CompleteZshParameters(findstart, base)
-    let [l:line_bits,l:line] = s:getPrecedingBits(a:findstart)
+    let [line_bits,line] = s:getPrecedingBits(a:findstart)
 
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if l:line_bits[-1] !~ '\v\$'
+        if line_bits[-1] !~ '\v\$'
             let b:zoc_compl_parameters_start = -3
         else
-            let b:zoc_compl_parameters_start = strridx(l:line, l:line_bits[-1])
-            let b:zoc_compl_parameters_start = b:zoc_compl_parameters_start + stridx(l:line[b:zoc_compl_parameters_start:],'$')
+            let b:zoc_compl_parameters_start = strridx(line, line_bits[-1])
+            let b:zoc_compl_parameters_start = b:zoc_compl_parameters_start + stridx(line[b:zoc_compl_parameters_start:],'$')
             " Support the from-void text completing. It's however disabled on
             " the upper level.
-            let b:zoc_compl_parameters_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
+            let b:zoc_compl_parameters_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         endif
         return b:zoc_compl_parameters_start
     else
@@ -112,14 +112,14 @@ function CompleteZshArrayAndHashKeys(findstart, base)
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if l:line_bits[-1] !~ '\v[a-zA-Z0-9_]+\[[^\]]+\]'
+        if line_bits[-1] !~ '\v[a-zA-Z0-9_]+\[[^\]]+\]'
             let b:zoc_compl_arrays_keys_start = -3
         else
-            let b:zoc_compl_arrays_keys_start = strridx(l:line, l:line_bits[-1])
-            let b:zoc_compl_arrays_keys_start = b:zoc_compl_arrays_keys_start + stridx(l:line[b:zoc_compl_arrays_keys_start:],'[') + 1
+            let b:zoc_compl_arrays_keys_start = strridx(line, line_bits[-1])
+            let b:zoc_compl_arrays_keys_start = b:zoc_compl_arrays_keys_start + stridx(line[b:zoc_compl_arrays_keys_start:],'[') + 1
             " Support the from-void text completing. It's however disabled on
             " the upper level.
-            let b:zoc_compl_arrays_keys_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
+            let b:zoc_compl_arrays_keys_start += line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         endif
         return b:zoc_compl_arrays_keys_start
     else
@@ -172,11 +172,11 @@ function s:gatherFunctionNames()
     let b:zoc_functions = []
 
     " Iterate over the lines in the buffer searching for a function name.
-    for l:line in s:zoc_all_buffers_lines
-        if l:line =~# '\v^((function[[:space:]]+[^[:space:]]+[[:space:]]*(\(\)|))|([^[:space:]]+[[:space:]]*\(\)))[[:space:]]*(\{|)[[:space:]]*$'
-            let l:line = split(l:line)[0]
-            let l:line = substitute(l:line,"()","","g")
-            call add(b:zoc_functions, l:line)
+    for line in s:zoc_all_buffers_lines
+        if line =~# '\v^((function[[:space:]]+[^[:space:]]+[[:space:]]*(\(\)|))|([^[:space:]]+[[:space:]]*\(\)))[[:space:]]*(\{|)[[:space:]]*$'
+            let line = split(line)[0]
+            let line = substitute(line,"()","","g")
+            call add(b:zoc_functions, line)
         endif
     endfor
 
@@ -193,10 +193,10 @@ function s:gatherParameterNames()
     let b:zoc_parameters = []
 
     " Iterate over the lines in the buffer searching for a Zsh parameter name.
-    for l:line in s:zoc_all_buffers_lines
-        if l:line =~# '\v\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}[a-zA-Z0-9_]+'
-            let l:param = substitute(l:line, '\v.*\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}([a-zA-Z0-9_]+).*','\4',"g")
-            call add(b:zoc_parameters, l:param)
+    for line in s:zoc_all_buffers_lines
+        if line =~# '\v\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}[a-zA-Z0-9_]+'
+            let param = substitute(line, '\v.*\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}([a-zA-Z0-9_]+).*','\4',"g")
+            call add(b:zoc_parameters, param)
         endif
     endfor
 
@@ -260,34 +260,34 @@ endfunction
 "   being located, not only the preceding part.
 function s:getPrecedingBits(findstart)
     if a:findstart
-        let l:line = getbufline(bufnr(), line("."))[0]
-        let b:zoc_curline = l:line
-        let l:curs_col = col(".")
-        let b:zoc_cursor_col = l:curs_col 
+        let line = getbufline(bufnr(), line("."))[0]
+        let b:zoc_curline = line
+        let curs_col = col(".")
+        let b:zoc_cursor_col = curs_col 
     else
-        let l:line = b:zoc_curline
-        let l:curs_col = b:zoc_cursor_col
+        let line = b:zoc_curline
+        let curs_col = b:zoc_cursor_col
     endif
 
-    let l:line_bits = split(l:line,'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>\"'."\\'".']')
-    let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line) > 0 ? (l:line)[len(l:line)-1] : ""]
+    let line_bits = split(line,'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>\"'."\\'".']')
+    let line_bits = len(line_bits) >= 1 ? line_bits : [len(line) > 0 ? (line)[len(line)-1] : ""]
 
-    if len(l:line_bits) > 1
+    if len(line_bits) > 1
         " Locate the *active*, *hot* bit in which the cursor is being placed.
-        let l:count = len(l:line_bits)
-        let l:work_line = l:line
-        for l:bit in reverse(copy(l:line_bits))
-            let l:idx = strridx(l:work_line, l:bit)
-            if l:idx <= l:curs_col - 2
+        let count = len(line_bits)
+        let work_line = line
+        for bit in reverse(copy(line_bits))
+            let idx = strridx(work_line, bit)
+            if idx <= curs_col - 2
                 " Return a sublist with the preceding elements up to the active,
                 " *hot* bit.
-                return [l:line_bits[0:l:count], l:line]
+                return [line_bits[0:l:count], line]
             endif
-            let l:work_line = l:work_line[0:l:idx-1]
-            let l:count -= 1
+            let work_line = work_line[0:l:idx-1]
+            let count -= 1
         endfor
     endif
-    return [l:line_bits, l:line]
+    return [line_bits, line]
 endfunction
 
 """""""""""""""""" THE SCRIPT BODY
@@ -295,6 +295,10 @@ endfunction
 let s:gatherFunctions = [ function("s:gatherFunctionNames"),
             \ function("s:gatherParameterNames"),
             \ function("s:gatherArrayAndHashKeys") ]
+
+let s:completerFunctions = [ function("CompleteZshFunctions"),
+            \ function("CompleteZshParameters"),
+            \ function("CompleteZshArrayAndHashKeys") ]
 
 augroup ZshOmniComplInitGroup
     au FileType * call ZshOmniComplBufInit()
