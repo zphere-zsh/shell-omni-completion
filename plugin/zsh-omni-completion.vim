@@ -244,13 +244,18 @@ function s:completeKeywords(id, line_bits, line)
     endif
     "echom 'After: '.string(a:line_bits)
 
+    let l:count = 0
     for the_key in gatherVariables[a:id]
+        let l:count += 1
         if a:id == g:ZOC_LINE
             let the_key = substitute(the_key,'\v^[[:space:]]*(.*)$', '\1', '')
             if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
                 if the_key != a:line_bits[-1]
                     call add(result, the_key)
                 endif
+            endif
+            if l:count >= 250
+                break
             endif
         else
             if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
