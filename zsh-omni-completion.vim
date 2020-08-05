@@ -23,19 +23,12 @@ endfunction
 " FUNCTION: CompleteZshFunctions()
 " The function is a complete-function which returns matching Zsh-function names.
 function CompleteZshFunctions(findstart, base)
-    if a:findstart
-        let l:line = getbufline(bufnr(), line("."))
-    else
-        let l:line = b:zv_curline
-    endif
-
-    let l:line_bits = split(l:line[0],'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>]')
-    let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line[0]) > 0 ? (l:line[0])[len(l:line[0])-1] : ""]
+    let [l:line_bits,l:line] = s:getPrecedingBits(a:findstart)
 
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        let b:zv_compl_1_start = strridx(l:line[0], l:line_bits[-1])
+        let b:zv_compl_1_start = strridx(l:line, l:line_bits[-1])
         let b:zv_compl_1_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         return l:line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_1_start
     else
@@ -61,23 +54,12 @@ endfunction
 " FUNCTION: CompleteZshParameters()
 " The function is a complete-function which returns matching Zsh-parameter names.
 function CompleteZshParameters(findstart, base)
-    if a:findstart
-        let l:line = getbufline(bufnr(), line("."))
-        " Remember the line, because when this function returns 0 then in the
-        " next call to this function the getbufline() will return an empty
-        " string, which is very weird…
-        let b:zv_curline = l:line
-    else
-        let l:line = b:zv_curline
-    endif
-
-    let l:line_bits = split(l:line[0],'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>]')
-    let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line[0]) > 0 ? (l:line[0])[len(l:line[0])-1] : ""]
+    let [l:line_bits,l:line] = s:getPrecedingBits(a:findstart)
 
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        let b:zv_compl_2_start = strridx(l:line[0], l:line_bits[-1])
+        let b:zv_compl_2_start = strridx(l:line, l:line_bits[-1])
         let b:zv_compl_2_start += l:line_bits[-1] =~ '^[[:space:]]$' ? 1 : 0
         return l:line_bits[-1] =~ '\v^[[:space:]]*$' ? -3 : b:zv_compl_2_start
     else
@@ -162,6 +144,46 @@ function s:quote(str)
                 \        ),'\v\+','\+', "g"
                 \     ),'\v\.','\.', "g"
                 \ )
+endfunction
+
+" The idea of this completion plugin is the following:
+" - SomeTextSomeText SomeOtherText
+"   ……………………↑ <the cursor>.
+" What will be completed, will be:
+" - the matching keywords (functions, parameters, etc.) that match:
+"   SomeTextSomeText,
+" - so the completion takes the whole part in which the cursor currently is
+"   being located, not only the preceding part.
+function s:getPrecedingBits(findstart)
+    if a:findstart
+        let l:line = getbufline(bufnr(), line("."))[0]
+        let b:zv_curline = l:line
+        let l:curs_col = col(".")
+        let b:zv_cursor_col = l:curs_col 
+    else
+        let l:line = b:zv_curline
+        let l:curs_col = b:zv_cursor_col
+    endif
+
+    let l:line_bits = split(l:line,'\v[[:space:]\[\]\{\}\(\);\|\&\#\%\=\^!\*\<\>\"'."\\'".']')
+    let l:line_bits = len(l:line_bits) >= 1 ? l:line_bits : [len(l:line) > 0 ? (l:line)[len(l:line)-1] : ""]
+
+    if len(l:line_bits) > 1
+        " Locate the *active*, *hot* bit in which the cursor is being placed.
+        let l:count = len(l:line_bits)
+        let l:work_line = l:line
+        for l:bit in reverse(copy(l:line_bits))
+            let l:idx = strridx(l:work_line, l:bit)
+            if l:idx <= l:curs_col - 2
+                " Return a sublist with the preceding elements up to the active,
+                " *hot* bit.
+                return [l:line_bits[0:l:count], l:line]
+            endif
+            let l:work_line = l:work_line[0:l:idx-1]
+            let l:count -= 1
+        endfor
+    endif
+    return [l:line_bits, l:line]
 endfunction
 
 let s:call_count = 0
