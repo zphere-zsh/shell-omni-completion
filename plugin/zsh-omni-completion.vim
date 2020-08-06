@@ -258,7 +258,7 @@ function s:completeKeywords(id, line_bits, line)
                 break
             endif
         else
-            if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
+            if the_key =~# '^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
                 call add(result, pfx.the_key)
             endif
         endif
