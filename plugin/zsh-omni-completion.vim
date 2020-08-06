@@ -249,7 +249,7 @@ function s:completeKeywords(id, line_bits, line)
         let l:count += 1
         if a:id == g:ZOC_LINE
             let the_key = substitute(the_key,'\v^[[:space:]]*(.*)$', '\1', '')
-            if the_key =~# '^' . s:quote(a:line_bits[-1]). '.*'
+            if the_key =~# '^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
                 if the_key != a:line_bits[-1]
                     call add(result, the_key)
                 endif
@@ -337,10 +337,10 @@ endfunction
 function s:gatherLines()
 endfunction
 
-" FUNCTION: s:quote()
+" FUNCTION: ZshQuoteRegex()
 " A function which quotes the regex-special characters with a backslash, which
 " makes them inactive, literal characters in the very-magic mode (… =~ " '\v…').
-function s:quote(str)
+function ZshQuoteRegex(str)
     return substitute(
                 \     substitute(
                 \        substitute(
@@ -348,14 +348,16 @@ function s:quote(str)
                 \                substitute(
                 \                    substitute(
                 \                        substitute(
-                \                            a:str,
-                \                            "\v\\\\","\\\\", "g"
-                \                        ), '\v\{','\{', "g"
-                \                    ), '\v\]','\]', "g"
-                \                ), '\v\[','\[', "g"
-                \            ), '\v\*','\*', "g"
-                \        ),'\v\+','\+', "g"
-                \     ),'\v\.','\.', "g"
+                \                            substitute(
+                \                                a:str,
+                \                                '\v\','\\\\', "g"
+                \                            ), '\v\$','\\$',"g"
+                \                        ), '\v\{','\\{', "g"
+                \                    ), '\v\]','\\]', "g"
+                \                ), '\v\[','\\[', "g"
+                \            ), '\v\*','\\*', "g"
+                \        ),'\v\+','\\+', "g"
+                \     ),'\v\.','\\.', "g"
                 \ )
 endfunction
 
