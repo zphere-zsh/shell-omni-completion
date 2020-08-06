@@ -3,6 +3,7 @@
 " It initializes the omni completion for the buffer.
 function ZshOmniComplBufInit()
     let b:zoc_call_count = 0
+    let b:zoc_cache_lines_active = 0
     let [ b:zoc_last_fccount, b:zoc_last_pccount, 
                 \ b:zoc_last_kccount, b:zoc_last_lccount ] = [ [-1], [-1], [-1], [-1] ]
     let b:zoc_last_ccount_vars = [ b:zoc_last_fccount, b:zoc_last_pccount, 
@@ -202,7 +203,14 @@ function CompleteLines(findstart, base)
         return b:zoc_compl_lines_start
     else
         " Detect the matching arrays' and hashes' keys and return them.
-        return s:completeKeywords(g:ZOC_LINE, line_bits, line)
+        if b:zoc_cache_lines_active
+            let b:zoc_cache_lines_active = 0
+            return b:zoc_lines_cache
+        else
+            let b:zoc_cache_lines_active = 1
+            let b:zoc_lines_cache = s:completeKeywords(g:ZOC_LINE, line_bits, line)
+            return b:zoc_lines_cache
+        endif
     endif
 endfunction
 
