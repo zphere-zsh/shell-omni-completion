@@ -8,7 +8,7 @@ function ZshOmniComplBufInit()
                 \ b:zoc_last_kccount, b:zoc_last_lccount ] = [ [-1], [-1], [-1], [-1] ]
     let b:zoc_last_ccount_vars = [ b:zoc_last_fccount, b:zoc_last_pccount, 
                 \ b:zoc_last_kccount, b:zoc_last_lccount ]
-    if &ft == 'zsh'
+    if &ft == 'zsh' || &ft == 'bash' || &ft == 'sh'
         setlocal omnifunc=ZshComplete
     endif
 endfunction
