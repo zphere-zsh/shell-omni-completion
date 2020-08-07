@@ -1,12 +1,12 @@
 # Zsh Omni Completion for Vim
 
-This Vim plugin implements a smart Vim omni completion for Zshell scripting
-language.  The completion's characteristics are:
+This Vim plugin implements a smart Vim omni completion for Bash and Zshell scripting
+languages. The completion's characteristics are:
 
-1. It'll detect all functions declared inside `filetype=zsh` Vim buffers **and
-   complete them only on the command-position**, i.e.: only as the first keyword
-   in a line or following a command-separator like **|** (`fun1 | fun2`, etc.),
-   **;**, etc.
+1. It'll detect all function-names declared inside `filetype=sh|bash|zsh` Vim
+   buffers **and complete them only on the command-position**, i.e.: only as the
+   first keyword in a line or following a command-separator like **|** (`fun1`
+   **|** `fun2`, etc.), a semicolon **;**, etc.
 
 2. It'll detect all parameter-names, i.e.: only keywords following a **$…**, and
    **complete them only after a $… or at the command-position** (to also
@@ -19,7 +19,7 @@ language.  The completion's characteristics are:
 # Installation and Usage
 
 An auto-completion plugin
-[**zphere-zsh/zsh-auto-popmenu**](https://github.com/zphere-zsh/zsh-auto-popmenu/)
+[**zphere-zsh/shell-auto-popmenu**](https://github.com/zphere-zsh/shell-auto-popmenu/)
 is recommended (it's a plugin adapted specifically for this omni completion),
 otherwise a regular omni-completion invocation via `Ctrl-X Ctrl-O` is also
 possible.
