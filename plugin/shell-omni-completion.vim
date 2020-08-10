@@ -257,7 +257,7 @@ function s:completeKeywords(id, line_bits, line)
         let l:count += 1
         if a:id == g:ZOC_LINE
             let the_key = substitute(the_key,'\v^[[:space:]]*(.*)$', '\1', '')
-            if the_key =~# '^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
+            if the_key =~# '\v^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
                 if the_key != a:line_bits[-1]
                     call add(result, the_key)
                 endif
@@ -266,7 +266,7 @@ function s:completeKeywords(id, line_bits, line)
                 break
             endif
         else
-            if the_key =~# '^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
+            if the_key =~# '\v^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
                 call add(result, pfx.the_key)
             endif
         endif
@@ -357,9 +357,11 @@ function ZshQuoteRegex(str)
                 \                    substitute(
                 \                        substitute(
                 \                            substitute(
-                \                                a:str,
-                \                                '\v\','\\\\', "g"
-                \                            ), '\v\$','\\$',"g"
+                \                                substitute(
+                \                                    a:str,
+                \                                    '\v\','\\\\', "g"
+                \                               ), '\v\$','\\$',"g"
+                \                            ), '\v\}','\\}', "g"
                 \                        ), '\v\{','\\{', "g"
                 \                    ), '\v\]','\\]', "g"
                 \                ), '\v\[','\\[', "g"
