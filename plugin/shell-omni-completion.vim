@@ -430,7 +430,7 @@ function! FilteredNot(fn, l)
     return new_list
 endfunction
 
-function CreateEmptyList(name)
+function! CreateEmptyList(name)
     eval("let ".a:name." = []")
 endfunction
 
