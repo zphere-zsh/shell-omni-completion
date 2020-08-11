@@ -371,7 +371,7 @@ function s:getPrecedingBits(findstart)
         let curs_col = b:zoc_cursor_col
     endif
 
-    let line_bits = split(line,'\v[[:space:]\{\}\(\)\#\%\=\^!\*\<\>\"'."\\'".']')
+    let line_bits = split(line,'\v[[:space:]\{\}\(\)\#\%\=\^\!\*\<\>\"'."\\'".']')
     let line_bits = len(line_bits) >= 1 ? line_bits : [len(line) > 0 ? (line)[len(line)-1] : ""]
 
     if len(line_bits) > 1
