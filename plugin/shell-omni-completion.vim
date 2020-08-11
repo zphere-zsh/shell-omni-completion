@@ -394,7 +394,7 @@ endfunction
 " A function which quotes the regex-special characters with a backslash, which
 " makes them inactive, literal characters in the very-magic mode (… =~ " '\v…').
 function ZshQuoteRegex(str)
-    return substitute( substitute( a:str, '\v\','\\\\', "g" ), '\v[^0-9A-Za-z_]','\\&',"g" )
+    return substitute( a:str, '\v[^0-9A-Za-z_[:space:]]','\\&',"g" )
 endfunction
 
 " The idea of this completion plugin is the following:
@@ -472,8 +472,8 @@ endfunction
 
 function! Filtered2(fn, l, arg)
     let new_list = deepcopy(a:l)
-    echom "Filtered2: " . '(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")'
-    call filter(new_list, string(a:fn) . '(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")')
+    echom "Filtered2 [len:".len(new_list)."]: " . string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")'
+    call filter(new_list, string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")')
     return new_list
 endfunction
 
@@ -484,8 +484,8 @@ function! FilteredNot(fn, l)
 endfunction
 
 function! DoesLineMatch(match, line)
-    let line = substitute(a:line, "\v^[[:space:]]+","","")
-    return a:match =~# '\v^' . VimQuoteRegex(line) . '.*'
+    let line2 = substitute(a:line, '\v^[[:space:]]+',"","")
+    return a:match =~# '\v^' . ZshQuoteRegex(line2) . '.*'
 endfunction
 
 function! CreateEmptyList(name)
