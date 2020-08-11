@@ -122,7 +122,7 @@ function CompleteZshFunctions(findstart, base)
         if line_bits[-1] !~ '\v\k{1,}$'
             "echom "-3 ← first"
             let b:zoc_compl_functions_start = -3
-        elseif len(line_bits_ne) >= 2 && line[idx:] !~ '\v^.*(\|\||\||\&|\&\&|;|builtin|command|exec|nocorrect|noglob|pkexec|while|until|if|then|elif|else|do|time|coproc|\|\&|\&\!|\&\|\()[[:space:]]+\k{1,}$'
+        elseif len(line_bits_ne) >= 2 && line[idx:] !~ '\v^.*(\|\||\||\&|\&\&|;|exec|nocorrect|noglob|pkexec|while|until|if|then|elif|else|do|time|coproc|\|\&|\&\!|\&\|\()[[:space:]]+\k{1,}$'
             "echom "-3 ← second"
             let b:zoc_compl_functions_start = -3
         else
