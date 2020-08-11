@@ -472,7 +472,8 @@ endfunction
 
 function! Filtered2(fn, l, arg)
     let new_list = deepcopy(a:l)
-    call filter(new_list, string(a:fn) . '(v:val, "' . a:arg . '")')
+    echom "Filtered2: " . '(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")'
+    call filter(new_list, string(a:fn) . '(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")')
     return new_list
 endfunction
 
