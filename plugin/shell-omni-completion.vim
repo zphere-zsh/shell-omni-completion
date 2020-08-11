@@ -30,7 +30,7 @@ function ZshComplete(findstart, base)
         let s:zoc_all_buffers_lines = []
         for bufnum in range(last_buffer_nr()+1)
             if buflisted(bufnum)
-                let s:zoc_all_buffers_lines += getbufline(bufnum, 1,"$")
+                let s:zoc_all_buffers_lines += map(getbufline(bufnum, 1,"$"), 'substitute(v:val,''\v^[[:space:]]*'', '''', '''')')
             endif
         endfor
     endif
@@ -213,19 +213,16 @@ function ZshCompleteLines(findstart, base)
         "echom (len(line) >= len(b:zoc_last_completed_line) ? "NO, not withdrawed >= (new is longer / same)" : "YES, withdrawed < (new is shorter)") . " →→ " . line . ' ↔ ' . b:zoc_last_completed_line 
         "echom "b:ZOC_CACHE_LINES_ACTIVE ←← " . b:zoc_cache_lines_active
         let b:zoc_last_completed_line = line
+        let quoted_stripped = ZshQuoteRegex(substitute(line,'\v^[[:space:]]+', "", ""))
         " A short-path (also a logic- short-path ↔ see the first completer
         " function call) for the locked-in-cache state.
         if b:zoc_cache_lines_active == 2 &&
                 \ enter_cstate == 2 &&
-                \ empty( matchstr( b:zoc_lines_cache, '\v^'.ZshQuoteRegex(line).'.*' ) )
-            ""echom 'SHORT-PATH (2==2) … →→ 1…2: →→ ' . string(b:zoc_lines_cache[0:1]) . '→→' . matchstr( b:zoc_lines_cache, '\v^'.ZshQuoteRegex(line).'.*' )
-            let b:zoc_short_path_taken = 1
-            let b:zoc_compl_lines_start = (len(b:zoc_lines_cache) == 0 || !pumvisible())
-                        \ ? -3 : b:zoc_compl_lines_start
+                \ empty( matchstr( b:zoc_lines_cache, '\v^'.quoted_stripped.'.*' ) )
+            "echom 'CLOSE-PATH (2==2) … →→ 1…2: →→ ' . string(b:zoc_lines_cache[0:1]) . '→→' . matchstr( b:zoc_lines_cache, '\v^'.quoted_stripped.'.*' )
+            let b:zoc_compl_lines_start = -3
             "echom '1/b:zoc_compl_lines_start:' . b:zoc_compl_lines_start
             return b:zoc_compl_lines_start
-        else
-            let b:zoc_short_path_taken = 0
         endif
         if line =~ '\v^[[:space:]]*$'
             "echom "returning -3 here… " . string(line) . '/' b:zoc_last_completed_line
@@ -242,9 +239,10 @@ function ZshCompleteLines(findstart, base)
         if b:zoc_cache_lines_active > 0
             "echom 'FROM CACHE [' . b:zoc_cache_lines_active . '], 1…2: → ' . string(b:zoc_lines_cache[0:1])
             let b:zoc_cache_lines_active = b:zoc_cache_lines_active == 2 ? 2 : 0
-            if b:zoc_short_path_taken || !pumvisible()
-                "echom 'RETURNING FILTERED: ' . string(Filtered2(function('DoesLineMatch'), b:zoc_lines_cache, line)[0:1])
-                return Filtered2 ( function('DoesLineMatch'), b:zoc_lines_cache, line )
+            if !pumvisible()
+                let line2 = VimQuoteRegex(substitute(line, '\v^[[:space:]]+',"",""))
+                "echom 'RETURNING FILTERED: ' . string(Filtered2(function('DoesLineMatch'), b:zoc_lines_cache, line2)[0:1])
+                return Filtered2 ( function('DoesLineMatch'), b:zoc_lines_cache, line2 )
             else
                 return b:zoc_lines_cache
             endif
@@ -266,6 +264,7 @@ endfunction
 " type of the keywords (functions, parameters or array keys) to complete and
 " performs the operation.
 function s:completeKeywords(id, line_bits, line)
+    let entry_time = reltime()
     " Retrieve the complete list of Zsh functions in the buffer on every
     " N-th call.
     if (b:zoc_call_count == 0) || ((b:zoc_call_count - a:id + 2) % 10 == 0)
@@ -291,18 +290,19 @@ function s:completeKeywords(id, line_bits, line)
         let a:line_bits[-1] = substitute( a:line_bits[-1], '\v^[^\[]+\[', '', '' )
         let pfx=''
     elseif a:id == g:ZOC_LINE
-        let a:line_bits[-1] = substitute(a:line,'\v^[[:space:]]*(.*)$', '\1', '')
+        let a:line_bits[-1] = substitute(a:line,'\v^[[:space:]]*', '', '')
     else
         let pfx=''
     endif
     "echom 'After: '.a:id.' / '.string(a:line_bits)
 
     let l:count = 0
+    let quoted = ZshQuoteRegex(a:line_bits[-1])
     for the_key in gatherVariables[a:id]
         let l:count += 1
         if a:id == g:ZOC_LINE
-            let the_key = substitute(the_key,'\v^[[:space:]]*(.*)$', '\1', '')
-            if the_key =~# '\v^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
+        "echom "the_key".the_key
+            if the_key =~# '\v^' . quoted . '.*'
                 if the_key != a:line_bits[-1]
                     call add(result, the_key)
                 endif
@@ -311,11 +311,16 @@ function s:completeKeywords(id, line_bits, line)
                 break
             endif
         else
-            if the_key =~# '\v^' . ZshQuoteRegex(a:line_bits[-1]). '.*'
+            if the_key =~# '\v^' . quoted . '.*'
                 call add(result, pfx.the_key)
             endif
         endif
     endfor
+
+    let g:vichord_summaric_completion_time += reltimefloat(reltime(entry_time))
+    "echohl WarningMsg
+    "echom "××× ckeywords ×××  ·•««" a:id "»»•·  ∞ elapsed-time ∞  ≈≈≈" split(reltimestr(reltime(entry_time)))[0]
+    "echohl None
 
     return result
 endfunction
@@ -472,7 +477,7 @@ endfunction
 
 function! Filtered2(fn, l, arg)
     let new_list = deepcopy(a:l)
-    echom "Filtered2 [len:".len(new_list)."]:" string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"g") . '")'
+    "echom "Filtered2 [len:".len(new_list)."]:" string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"g") . '")'
     call filter(new_list, string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"g") . '")')
     return new_list
 endfunction
