@@ -19,6 +19,9 @@ endfunction
 " has the main task to perform the omni-completion, i.e.: to return the list of
 " matches to the text before the cursor.
 function ZshComplete(findstart, base)
+    if getline(".") =~ '\v^[[:space:]]*\#.*'
+        return -3
+    endif
     " Prepare the buffers' contents for processing, if needed (i.e.: on every
     " N-th call, when only also the processing-sequence is being initiated).
     "
