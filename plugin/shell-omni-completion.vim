@@ -349,7 +349,7 @@ endfunction
 " A function which quotes the regex-special characters with a backslash, which
 " makes them inactive, literal characters in the very-magic mode (… =~ " '\v…').
 function ZshQuoteRegex(str)
-    return substitute( substitute( a:str, '\v\','\\\\', "g" ), '\v[^0-9A-Za-z_]','\\\1',"g" )
+    return substitute( substitute( a:str, '\v\','\\\\', "g" ), '\v[^0-9A-Za-z_]','\\&',"g" )
 endfunction
 
 " The idea of this completion plugin is the following:
