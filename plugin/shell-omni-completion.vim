@@ -410,6 +410,7 @@ augroup END
 
 let [ g:ZOC_FUNC, g:ZOC_PARAM, g:ZOC_KEY, g:ZOC_LINE ] = [ 0, 1, 2, 3 ]
 
+let g:shell_omni_completion_loaded = 1
 """""""""""""""""" UTILITY FUNCTIONS
 
 function! Mapped(fn, l)
