@@ -492,4 +492,7 @@ function! CreateEmptyList(name)
     eval("let ".a:name." = []")
 endfunction
 
+function! FunConcat(f, ...)
+    return a:f."('".join(a:000, "', '")."')"
+endfunction
 " vim:set ft=vim tw=80 et sw=4 sts=4 foldmethod=syntax:
