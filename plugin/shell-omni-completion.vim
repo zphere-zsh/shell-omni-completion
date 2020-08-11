@@ -472,8 +472,8 @@ endfunction
 
 function! Filtered2(fn, l, arg)
     let new_list = deepcopy(a:l)
-    echom "Filtered2 [len:".len(new_list)."]: " . string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")'
-    call filter(new_list, string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"") . '")')
+    echom "Filtered2 [len:".len(new_list)."]:" string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"g") . '")'
+    call filter(new_list, string(a:fn).'(v:val, "' . substitute(a:arg,'\v([\"\\])','\\\1',"g") . '")')
     return new_list
 endfunction
 
@@ -484,8 +484,7 @@ function! FilteredNot(fn, l)
 endfunction
 
 function! DoesLineMatch(match, line)
-    let line2 = substitute(a:line, '\v^[[:space:]]+',"","")
-    return a:match =~# '\v^' . ZshQuoteRegex(line2) . '.*'
+    return a:match =~# '\v^' . a:line . '.*'
 endfunction
 
 function! CreateEmptyList(name)
