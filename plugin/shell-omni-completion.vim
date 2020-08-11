@@ -4,6 +4,7 @@
 function ZshOmniComplBufInit()
     let b:zoc_call_count = 0
     let b:zoc_cache_lines_active = 0
+    let b:zoc_last_completed_line = ''
     let [ b:zoc_last_fccount, b:zoc_last_pccount, 
                 \ b:zoc_last_kccount, b:zoc_last_lccount ] = [ [-1], [-1], [-1], [-1] ]
     let b:zoc_last_ccount_vars = [ b:zoc_last_fccount, b:zoc_last_pccount, 
@@ -39,6 +40,7 @@ function ZshComplete(findstart, base)
         call CompleteZshFunctions(1, a:base)
         if b:zoc_compl_functions_start >= 0
             let result_compl = CompleteZshFunctions(0, a:base)
+            "echom '1/len(result_compl)='.len(result_compl)
             if len(result_compl)
                 let result = b:zoc_compl_functions_start
                 let winner = 0
@@ -50,9 +52,10 @@ function ZshComplete(findstart, base)
             endif
         endif
         if ! got_winner
-            call CompleteLines(1, a:base)
+            call ZshCompleteLines(1, a:base)
             if ( b:zoc_compl_lines_start >= 0 )
-                let result_compl = CompleteLines(0, a:base)
+                let result_compl = ZshCompleteLines(0, a:base)
+                "echom '2/len(result_compl)='.len(result_compl)
                 if len(result_compl)
                     let result = b:zoc_compl_lines_start
                     let winner = 3
@@ -68,7 +71,7 @@ function ZshComplete(findstart, base)
             let four_results = [ b:zoc_compl_functions_start,
                         \ CompleteZshParameters(1, a:base),
                         \ CompleteZshArrayAndHashKeys(1, a:base),
-                        \ CompleteLines(1, a:base) ]
+                        \ ZshCompleteLines(1, a:base) ]
             let result = max( four_results )
             let winner = index( four_results, result )
         endif
@@ -108,12 +111,14 @@ function CompleteZshFunctions(findstart, base)
     " remember the current column.
     if a:findstart
         let line_bits_ne = Filtered(function('len'), line_bits)
-        "echom idx . "← idx"
+        "echom string(line_bits) . string(line_bits_ne)
+        "echom "::: FUNS ::: " . string(line_bits) . string(line_bits_ne)
         if len(line_bits_ne)
             let idx = strridx( line, len(line_bits_ne) >= 2 ? line_bits_ne[-2] : line_bits_ne[-1] )
         else
             let idx = 0
         endif
+        "echom idx . "← idx"
         if line_bits[-1] !~ '\v\k{1,}$'
             "echom "-3 ← first"
             let b:zoc_compl_functions_start = -3
@@ -185,30 +190,70 @@ function CompleteZshArrayAndHashKeys(findstart, base)
     endif
 endfunction
 
-" FUNCTION: CompleteLines()
+" FUNCTION: ZshCompleteLines()
 " The function is a complete-function which returns matching lines.
-function CompleteLines(findstart, base)
+function ZshCompleteLines(findstart, base)
     let [line_bits,line] = s:getPrecedingBits(a:findstart)
 
     " First call — basically return 0. Additionally (it's unused value),
     " remember the current column.
     if a:findstart
-        if line_bits[-1] =~ '\v^[[:space:]]*$'
+        " Remember the entry cache-state to verify its change later.
+        let enter_cstate = b:zoc_cache_lines_active
+        " Line was enriched, extended? Thus, it cannot yield any NEW ↔ DIFFERENT
+        " results?
+        if len(line) >= len(b:zoc_last_completed_line) && !empty(b:zoc_last_completed_line)
+            " Disable the cache invalidation IF a fresh cache has been computed.
+            " — 2 — got a fresh cache, invalidation stopped,
+            " — -1 — request a fresh cache recomputation before the stop.
+            let b:zoc_cache_lines_active = b:zoc_cache_lines_active == 2 ? 2 : -1
+        else
+            let b:zoc_cache_lines_active = 0
+        endif
+        "echom (len(line) >= len(b:zoc_last_completed_line) ? "NO, not withdrawed >= (new is longer / same)" : "YES, withdrawed < (new is shorter)") . " →→ " . line . ' ↔ ' . b:zoc_last_completed_line 
+        "echom "b:ZOC_CACHE_LINES_ACTIVE ←← " . b:zoc_cache_lines_active
+        let b:zoc_last_completed_line = line
+        " A short-path (also a logic- short-path ↔ see the first completer
+        " function call) for the locked-in-cache state.
+        if b:zoc_cache_lines_active == 2 &&
+                \ enter_cstate == 2 &&
+                \ empty( matchstr( b:zoc_lines_cache, '\v^'.ZshQuoteRegex(line).'.*' ) )
+            ""echom 'SHORT-PATH (2==2) … →→ 1…2: →→ ' . string(b:zoc_lines_cache[0:1]) . '→→' . matchstr( b:zoc_lines_cache, '\v^'.ZshQuoteRegex(line).'.*' )
+            let b:zoc_short_path_taken = 1
+            let b:zoc_compl_lines_start = (len(b:zoc_lines_cache) == 0 || !pumvisible())
+                        \ ? -3 : b:zoc_compl_lines_start
+            "echom '1/b:zoc_compl_lines_start:' . b:zoc_compl_lines_start
+            return b:zoc_compl_lines_start
+        else
+            let b:zoc_short_path_taken = 0
+        endif
+        if line =~ '\v^[[:space:]]*$'
+            "echom "returning -3 here… " . string(line) . '/' b:zoc_last_completed_line
             let b:zoc_compl_lines_start = -3
         else
             let line_bits_ne = Filtered(function('len'), line_bits)
             let idx = stridx(line,line_bits_ne[0])
             let b:zoc_compl_lines_start = idx <= 0 ? 0 : idx
         endif
+        "echom '2/b:zoc_compl_lines_start:' . b:zoc_compl_lines_start
         return b:zoc_compl_lines_start
     else
         " Detect the matching arrays' and hashes' keys and return them.
-        if b:zoc_cache_lines_active
-            let b:zoc_cache_lines_active = 0
-            return b:zoc_lines_cache
+        if b:zoc_cache_lines_active > 0
+            "echom 'FROM CACHE [' . b:zoc_cache_lines_active . '], 1…2: → ' . string(b:zoc_lines_cache[0:1])
+            let b:zoc_cache_lines_active = b:zoc_cache_lines_active == 2 ? 2 : 0
+            if b:zoc_short_path_taken || !pumvisible()
+                "echom 'RETURNING FILTERED: ' . string(Filtered2(function('DoesLineMatch'), b:zoc_lines_cache, line)[0:1])
+                return Filtered2 ( function('DoesLineMatch'), b:zoc_lines_cache, line )
+            else
+                return b:zoc_lines_cache
+            endif
         else
-            let b:zoc_cache_lines_active = 1
+            " helper var
+            let enter_cstate = b:zoc_cache_lines_active
+            let b:zoc_cache_lines_active = b:zoc_cache_lines_active == -1 ? 2 : 1
             let b:zoc_lines_cache = s:completeKeywords(g:ZOC_LINE, line_bits, line)
+            "echom 'FROM COMPUTATION [' . enter_cstate . '], 1…2: → ' . string(b:zoc_lines_cache[0:1])
             return b:zoc_lines_cache
         endif
     endif
@@ -250,7 +295,7 @@ function s:completeKeywords(id, line_bits, line)
     else
         let pfx=''
     endif
-    "echom 'After: '.string(a:line_bits)
+    "echom 'After: '.a:id.' / '.string(a:line_bits)
 
     let l:count = 0
     for the_key in gatherVariables[a:id]
@@ -402,7 +447,7 @@ let s:gatherFunctions = [ function("s:gatherFunctionNames"),
 let s:completerFunctions = [ function("CompleteZshFunctions"),
             \ function("CompleteZshParameters"),
             \ function("CompleteZshArrayAndHashKeys"),
-            \ function("CompleteLines") ]
+            \ function("ZshCompleteLines") ]
 
 augroup ZshOmniComplInitGroup
     au FileType * call ZshOmniComplBufInit()
@@ -425,10 +470,20 @@ function! Filtered(fn, l)
     return new_list
 endfunction
 
+function! Filtered2(fn, l, arg)
+    let new_list = deepcopy(a:l)
+    call filter(new_list, string(a:fn) . '(v:val, "' . a:arg . '")')
+    return new_list
+endfunction
+
 function! FilteredNot(fn, l)
     let new_list = deepcopy(a:l)
     call filter(new_list, '!'.string(a:fn) . '(v:val)')
     return new_list
+endfunction
+
+function! DoesLineMatch(match, line)
+    return a:match =~# '\v^' . VimQuoteRegex(a:line) . '.*'
 endfunction
 
 function! CreateEmptyList(name)
