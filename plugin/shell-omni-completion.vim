@@ -469,6 +469,10 @@ let [ g:ZOC_FUNC, g:ZOC_PARAM, g:ZOC_KEY, g:ZOC_LINE ] = [ 0, 1, 2, 3 ]
 let g:zoc_zsh_buffers = []
 let g:zoc_summaric_completion_time = 0.0
 let g:shell_omni_completion_loaded = 1
+
+set completeopt+=menuone,noinsert
+set completeopt-=noselect
+
 """""""""""""""""" UTILITY FUNCTIONS
 
 function! Mapped(fn, l)
