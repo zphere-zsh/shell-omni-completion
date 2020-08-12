@@ -3,6 +3,7 @@
 " It initializes the omni completion for the buffer.
 function ZshOmniComplBufInit()
     let b:zoc_call_count = 0
+    let b:zoc_last_all_lines_get_count = -1
     let b:zoc_cache_lines_active = 0
     let b:zoc_last_completed_line = ''
     let [ b:zoc_last_fccount, b:zoc_last_pccount, 
@@ -10,6 +11,7 @@ function ZshOmniComplBufInit()
     let b:zoc_last_ccount_vars = [ b:zoc_last_fccount, b:zoc_last_pccount, 
                 \ b:zoc_last_kccount, b:zoc_last_lccount ]
     if &ft == 'zsh' || &ft == 'bash' || &ft == 'sh'
+        call add(g:zoc_zsh_buffers, bufnr())
         setlocal omnifunc=ZshComplete
     endif
 endfunction
@@ -29,10 +31,12 @@ function ZshComplete(findstart, base)
     " processings, i.e.: it depends on the local (to the buffer) call count
     " of the plugin, however the storage variable is s: -session, to limit the
     " memory usage.
-    if b:zoc_call_count % 5 == 0
+    if b:zoc_call_count % 5 == 0 && b:zoc_last_all_lines_get_count != b:zoc_call_count
+        let b:zoc_last_all_lines_get_count = b:zoc_call_count
         let s:zoc_all_buffers_lines = []
-        for bufnum in range(last_buffer_nr()+1)
+        for bufnum in g:zoc_zsh_buffers
             if buflisted(bufnum)
+                "echom "Appending of" bufnum b:zoc_call_count
                 let s:zoc_all_buffers_lines += map(getbufline(bufnum, 1,"$"), 'substitute(v:val,''\v^[[:space:]]*'', '''', '''')')
             endif
         endfor
@@ -320,7 +324,7 @@ function s:completeKeywords(id, line_bits, line)
         endif
     endfor
 
-    let g:vichord_summaric_completion_time += reltimefloat(reltime(entry_time))
+    let g:zoc_summaric_completion_time += reltimefloat(reltime(entry_time))
     "echohl WarningMsg
     "echom "××× ckeywords ×××  ·•««" a:id "»»•·  ∞ elapsed-time ∞  ≈≈≈" split(reltimestr(reltime(entry_time)))[0]
     "echohl None
@@ -462,7 +466,8 @@ augroup ZshOmniComplInitGroup
 augroup END
 
 let [ g:ZOC_FUNC, g:ZOC_PARAM, g:ZOC_KEY, g:ZOC_LINE ] = [ 0, 1, 2, 3 ]
-
+let g:zoc_zsh_buffers = []
+let g:zoc_summaric_completion_time = 0.0
 let g:shell_omni_completion_loaded = 1
 """""""""""""""""" UTILITY FUNCTIONS
 
