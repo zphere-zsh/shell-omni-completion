@@ -11,10 +11,18 @@ function ZshOmniComplBufInit()
     let b:zoc_last_ccount_vars = [ b:zoc_last_fccount, b:zoc_last_pccount, 
                 \ b:zoc_last_kccount, b:zoc_last_lccount ]
     if &ft == 'zsh' || &ft == 'bash' || &ft == 'sh'
-        call add(g:zoc_zsh_buffers, bufnr())
-        setlocal omnifunc=ZshComplete
-        setlocal completeopt+=menuone,noinsert
+        if ! get(g:,'zoc_use_cfu_setting','0')
+            setlocal omnifunc=ZshComplete
+        else
+            setlocal completefunc=ZshComplete
+        endif
+        setlocal completeopt=menuone,noinsert
+        " Ensure the first-item selection is enabled (paranoid).
         setlocal completeopt-=noselect
+        if get(g:, 'zoc_auto_insert', 0)
+            setlocal completeopt-=noinsert
+        endif
+        call add(g:zoc_zsh_buffers, bufnr())
     endif
 endfunction
 
