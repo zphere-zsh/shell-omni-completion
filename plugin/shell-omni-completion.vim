@@ -1,3 +1,36 @@
+" Vim Omni Completion For The Bourne-Shell Scripting Languages.
+" Copyright (c) 2020 Sebastian Gniazdowski.
+" License: Gnu GPL v3.
+" 
+" If using an autocomplete plugin and undecided which one to use, then the
+" plugin zphere-zsh/shell-autopop-menu is recommended. It'll integrate nicely
+" with this plugin as it is specifically tested and adapted to work with it.
+" It started as a (fork-based) companion plugin for this omni completion.
+" 
+" This plugin does no more than setting `omnifunc` (or `completefunc` — see
+" below) and `completeopt` set variables, what allows to invoke the completion
+" via Ctrl-X Ctrl-O (or Ctrl-X Ctrl-U, see g:zoc_use_cfu_setting below). You may
+" want to use g:zoc_auto_insert if using this plugin this way, see below.
+"
+" 
+" 
+" Configuration Variables:
+" ------------------------
+"
+" — g:zoc_use_cfu_setting — whether to use completefunc (^X^U) instead of
+"   omnifunc (^X^O) setting (default: 0), example:
+"       let g:zoc_use_cfu_setting = 1
+"
+" — g:zoc_search_in_let — whether to search for variables in "let …"
+"   statements (slows down a bit, however it allows to complete local variables
+"   even when they're used without the l:… prefix) (default: 0), example:
+"       let g:zoc_search_in_let = 1
+"
+" — g:zoc_auto_insert — whether to enable inserting of the first candidate on
+"   the activation of the completion on ^X^O — it'll normally only be selected
+"   and the buffer/the text will remain unchanged after pressing the keys.
+"
+
 " FUNCTION: ZshOmniComplBufInit()
 " A function that's called when the buffer is loaded and its filetype is known.
 " It initializes the omni completion for the buffer.
