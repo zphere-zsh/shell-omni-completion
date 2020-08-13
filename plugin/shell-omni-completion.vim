@@ -298,31 +298,25 @@ function s:completeKeywords(id, line_bits, line)
         let pfx=''
     elseif a:id == g:ZOC_LINE
         let a:line_bits[-1] = substitute(a:line,'\v^[[:space:]]*', '', '')
+        let pfx=''
     else
         let pfx=''
     endif
     "echom 'After: '.a:id.' / '.string(a:line_bits)
 
-    let l:count = 0
-    let quoted = ZshQuoteRegex(a:line_bits[-1])
-    for the_key in gatherVariables[a:id]
-        let l:count += 1
-        if a:id == g:ZOC_LINE
-        "echom "the_key".the_key
-            if the_key =~# '\v^' . quoted . '.*'
-                if the_key != a:line_bits[-1]
-                    call add(result, the_key)
-                endif
-            endif
-            if l:count >= 250
-                break
-            endif
-        else
-            if the_key =~# '\v^' . quoted . '.*'
-                call add(result, pfx.the_key)
-            endif
-        endif
-    endfor
+
+    let quoted = VimQuoteRegex(a:line_bits[-1])
+    "echom "VimQuoteRegex(a:line_bits[-1]): " . quoted
+    if a:id == g:VCHRD_LINE
+        let result = filter(copy(gatherVariables[a:id]),
+                    \ 'v:val =~# ''\v^''.quoted && v:val != a:line_bits[-1]')
+    else
+        let result = filter(copy(gatherVariables[a:id]),
+                    \ 'v:val =~# ''\v^''.quoted')
+    endif
+    if !empty(pfx)
+        call map(result, "pfx . v:val")
+    endif
 
     let g:zoc_summaric_completion_time += reltimefloat(reltime(entry_time))
     "echohl WarningMsg
@@ -336,19 +330,14 @@ endfunction
 " Buffer-contents processor for Zsh *function* names. Stores all the detected
 " Zsh function names in the list b:zoc_parameters.
 function s:gatherFunctionNames()
-    " Prepare/zero the buffer variable.
+    " Prepare, i.e.: zero the buffer collection-variable.
     let b:zoc_functions = []
 
-    " Iterate over the lines in the buffer searching for a function name.
-    for line in s:zoc_all_buffers_lines
-        if line =~# '\v^((function[[:space:]]+[^[:space:]]+[[:space:]]*(\(\)|))|([^[:space:]]+[[:space:]]*\(\)))[[:space:]]*(\{|)[[:space:]]*$'
-            let line = split(line)[0]
-            let line = substitute(line,"()","","g")
-            call add(b:zoc_functions, line)
-        endif
-    endfor
-
-    " Uniqify the resulting list of Zsh function names. The uniquification
+    " First gather the proper lines of the buffers.
+    let b:zoc_functions = filter(copy(s:zoc_all_buffers_lines), 'v:val =~# ''\v^[[:space:]]*fu%[nction][[:space:]]*\!=[[:space:]]+([^[:space:]]+)[[:space:]]*\(''')
+    " Then extract the function names.
+    call map( b:zoc_functions, 'matchlist(v:val, ''\v^[[:space:]]*fu%[nction][[:space:]]*\!=[[:space:]]+([^[:space:]]+)[[:space:]]*\('')[1]' )
+    " Uniqify the resulting list of Vim function names. The uniquification
     " requires also sorting the input list.
     call uniq(sort(b:zoc_functions))
 endfunction
@@ -357,16 +346,8 @@ endfunction
 " Buffer-contents processor for Zsh *parameter* names. Stores all the detected
 " Zsh parameter names in the list b:zoc_parameters.
 function s:gatherParameterNames()
-    " Prepare/zero the buffer variable.
-    let b:zoc_parameters = []
-
-    " Iterate over the lines in the buffer searching for a Zsh parameter name.
-    for line in s:zoc_all_buffers_lines
-        if line =~# '\v\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}[a-zA-Z0-9_]+'
-            let param = substitute(line, '\v.*\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}([a-zA-Z0-9_]+).*','\4',"g")
-            call add(b:zoc_parameters, param)
-        endif
-    endfor
+    let b:zoc_parameters = filter(copy(s:zoc_all_buffers_lines), 'v:val =~# ''\v\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}[a-zA-Z0-9_]+''')
+    call map(b:zoc_parameters,'substitute(v:val, ''\v.*\$(\{|)([#+^=~]{1,2}){0,1}(\([a-zA-Z0-9_:@%.\|;#~]+\)){0,1}#{0,1}([a-zA-Z0-9_]+).*'',''\4'',"g")')
 
     " Uniqify the resulting list of Zsh parameter names. The uniquification
     " requires also sorting the input list.
