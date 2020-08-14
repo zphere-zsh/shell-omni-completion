@@ -52,6 +52,8 @@ function ZshOmniComplBufInit()
         setlocal completeopt=menuone,noinsert
         " Ensure the first-item selection is enabled (paranoid).
         setlocal completeopt-=noselect
+        "if g:zoc_auto_insert
+        "endif
         if get(g:, 'zoc_auto_insert', 0)
             setlocal completeopt-=noinsert
         endif
@@ -363,7 +365,7 @@ function s:completeKeywords(id, line_bits, line)
 
     let g:zoc_summaric_completion_time += reltimefloat(reltime(entry_time))
     "echohl WarningMsg
-    "echom "××× ckeywords ×××  ·•««" a:id "»»•·  ∞ elapsed-time ∞  ≈≈≈" split(reltimestr(reltime(entry_time)))[0]
+    "echom "⟁⟁⟁ ckeywords ⟁⟁⟁  ·•««" a:id "»»•·  ∞ elapsed-time ∞  ≈≈≈" split(reltimestr(reltime(entry_time)))[0]
     "echohl None
 
     return result
